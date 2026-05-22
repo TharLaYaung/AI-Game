@@ -1,8 +1,9 @@
-﻿#pragma once
+#pragma once
 
 // シーン（画面）の種類を表すリスト
 enum class SceneType {
     TITLE,      // タイトル画面
+    CHARACTER_SELECT, // キャラクター（バフ）選択画面
     MAIN,       // メインのゲーム画面
     RESULT,     // リザルト（クリア）画面
     GAMEOVER,   // ゲームオーバー画面

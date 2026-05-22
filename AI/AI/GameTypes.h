@@ -24,4 +24,17 @@ enum class GameDifficulty {
     HARD
 };
 
+enum class BuffType {
+    NONE,
+    LASER,
+    BOMB,
+    SPEED
+};
+
 extern GameDifficulty g_Difficulty;
+extern BuffType g_Buff;
+extern int g_Score;
+extern std::vector<int> g_Ranking;
+
+void LoadRanking();
+void SaveRanking(int newScore);

@@ -21,14 +21,19 @@ void MainScene::Initialize() {
     SetGlobalAmbientLight(GetColorF(0.8f, 0.8f, 0.8f, 1.0f));
     
     bgImageHandle = LoadGraph(L"bg_cyberpunk.png");
-    hudFontHandle = CreateFontToHandle(L"Impact", 24, 2, DX_FONTTYPE_ANTIALIASING_EDGE);
-    smallFontHandle = CreateFontToHandle(L"Consolas", 16, 2, DX_FONTTYPE_ANTIALIASING_EDGE);
+    hudFontHandle = CreateFontToHandle(L"Arial Black", 24, 3, DX_FONTTYPE_ANTIALIASING_EDGE);
+    smallFontHandle = CreateFontToHandle(L"Arial Black", 16, 2, DX_FONTTYPE_ANTIALIASING_EDGE);
+    
+    miniEnemies.clear();
+    items.clear();
+    g_Score = 0;
     
     PlayMusic(L"C:\\Windows\\Media\\town.mid", DX_PLAYTYPE_LOOP);
 }
 
 SceneType MainScene::Update() {
     if (boss->GetHP() <= 0) {
+        if (clearTimer == 0) g_Score += 10000;
         clearTimer++;
         if (clearTimer > 60) return SceneType::RESULT;
     }
@@ -46,11 +51,46 @@ SceneType MainScene::Update() {
 
     for (auto& b : player->GetBullets()) {
         if (!b.active) continue;
-        VECTOR diff = VSub(b.pos, boss->GetPos());
+        
+        // Mini enemy collision
+        bool hitMini = false;
+        for (auto& e : miniEnemies) {
+            if (!e.active) continue;
+            VECTOR diff = VSub(e.pos, b.pos);
+            if (VSquareSize(diff) < 1500.0f) {
+                e.hp -= (g_Buff == BuffType::BOMB) ? 20 : 10;
+                if (g_Buff != BuffType::LASER) b.active = false;
+                effectManager->AddExplosion(b.pos, GetColor(255, 255, 0), (g_Buff == BuffType::BOMB) ? 30 : 10);
+                
+                if (e.hp <= 0) {
+                    e.active = false;
+                    g_Score += 100;
+                    effectManager->AddExplosion(e.pos, GetColor(255, 100, 0), 40);
+                    PlaySoundFile(L"C:\\Windows\\Media\\Windows Critical Stop.wav", DX_PLAYTYPE_BACK);
+                    
+                    if (GetRand(100) < 40) {
+                        Item it;
+                        it.pos = e.pos;
+                        int r = GetRand(2);
+                        if (r == 0) it.type = BuffType::LASER;
+                        else if (r == 1) it.type = BuffType::BOMB;
+                        else it.type = BuffType::SPEED;
+                        it.active = true;
+                        items.push_back(it);
+                    }
+                }
+                hitMini = true;
+                break;
+            }
+        }
+        if (hitMini) continue;
+
+        VECTOR diff = VSub(boss->GetPos(), b.pos);
         if (VSquareSize(diff) < (b.radius + boss->GetRadius()) * (b.radius + boss->GetRadius())) {
-            boss->Damage(10);
-            b.active = false;
-            effectManager->AddExplosion(b.pos, GetColor(255, 255, 0), 10);
+            boss->Damage((g_Buff == BuffType::BOMB) ? 20 : 10);
+            g_Score += (g_Buff == BuffType::BOMB) ? 20 : 10;
+            if (g_Buff != BuffType::LASER) b.active = false;
+            effectManager->AddExplosion(b.pos, GetColor(255, 255, 0), (g_Buff == BuffType::BOMB) ? 30 : 10);
             PlaySoundFile(L"C:\\Windows\\Media\\Windows Critical Stop.wav", DX_PLAYTYPE_BACK);
         }
     }
@@ -82,10 +122,43 @@ SceneType MainScene::Update() {
             VECTOR diffBoss = VSub(b.pos, boss->GetPos());
             if (VSquareSize(diffBoss) < (b.radius + boss->GetRadius()) * (b.radius + boss->GetRadius())) {
                 boss->Damage(50);
+                g_Score += 50;
                 b.active = false;
                 effectManager->AddExplosion(b.pos, GetColor(0, 255, 255), 30);
                 PlaySoundFile(L"C:\\Windows\\Media\\Windows Critical Stop.wav", DX_PLAYTYPE_BACK);
             }
+        }
+    }
+
+    // Spawn mini enemies
+    if (GetRand(100) < 3) {
+        MiniEnemy e;
+        e.pos = VGet((float)(GetRand(1000) - 500), (float)(250 + GetRand(200)), 1000.0f);
+        e.speed = 3.0f + GetRand(4);
+        e.hp = 10;
+        e.active = true;
+        miniEnemies.push_back(e);
+    }
+    
+    // Update mini enemies
+    for (auto& e : miniEnemies) {
+        if (!e.active) continue;
+        e.pos.z -= e.speed;
+        if (e.pos.z < -1000.0f) e.active = false;
+    }
+    
+    // Update items
+    for (auto& it : items) {
+        if (!it.active) continue;
+        it.pos.z -= 2.0f;
+        if (it.pos.z < -1000.0f) it.active = false;
+        
+        VECTOR diff = VSub(player->GetPos(), it.pos);
+        if (VSquareSize(diff) < 2500.0f) {
+            g_Buff = it.type;
+            g_Score += 500;
+            it.active = false;
+            PlaySoundFile(L"C:\\Windows\\Media\\Windows Navigation Start.wav", DX_PLAYTYPE_BACK);
         }
     }
 
@@ -109,27 +182,51 @@ void MainScene::Draw() {
     SetDrawBlendMode(DX_BLENDMODE_ALPHA, 180);
     DrawBox(0, 0, 800, 40, GetColor(0, 20, 50), TRUE);
     DrawBox(0, 40, 800, 42, GetColor(0, 255, 255), TRUE);
+    // Draw mini enemies
+    for (const auto& e : miniEnemies) {
+        if (!e.active) continue;
+        DrawCapsule3D(VAdd(e.pos, VGet(-15,0,0)), VAdd(e.pos, VGet(15,0,0)), 15.0f, 8, GetColor(255, 50, 50), GetColor(255, 255, 255), TRUE);
+    }
+    
+    // Draw items
+    for (const auto& it : items) {
+        if (!it.active) continue;
+        int color = GetColor(255, 255, 255);
+        if (it.type == BuffType::LASER) color = GetColor(0, 255, 255);
+        else if (it.type == BuffType::BOMB) color = GetColor(255, 100, 0);
+        else if (it.type == BuffType::SPEED) color = GetColor(255, 255, 0);
+        
+        VECTOR p1 = VAdd(it.pos, VGet(-10, -10, -10));
+        VECTOR p2 = VAdd(it.pos, VGet(10, 10, 10));
+        DrawCube3D(p1, p2, color, GetColor(255, 255, 255), TRUE);
+    }
+
     SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
 
     DrawStringToHandle(10, 10, L"// CYBER_COMBAT_PROTOCOL_ENGAGED", GetColor(0, 255, 255), smallFontHandle);
-    DrawStringToHandle(400, 10, L"MOVE: WASD | FIRE: Space | FORM: Shift", GetColor(200, 200, 255), smallFontHandle);
+    DrawStringToHandle(10, 30, L"MOVE: WASD | FIRE: Space | FORM: Shift", GetColor(200, 200, 255), smallFontHandle);
 
+    // Center Crosshair
     DrawLine(390, 300, 395, 300, GetColor(0, 255, 255));
     DrawLine(405, 300, 410, 300, GetColor(0, 255, 255));
     DrawLine(400, 290, 400, 295, GetColor(0, 255, 255));
     DrawLine(400, 305, 400, 310, GetColor(0, 255, 255));
     DrawCircle(400, 300, 15, GetColor(0, 255, 255), FALSE);
 
-    DrawStringToHandle(10, 50, L"SYSTEM INTEGRITY (PLAYER)", GetColor(0, 255, 255), hudFontHandle);
-    DrawBox(10, 80, 210, 95, GetColor(50, 50, 50), TRUE);
-    DrawBox(10, 80, 10 + player->GetHP() * 2, 95, GetColor(0, 255, 150), TRUE);
-    DrawBox(10, 80, 210, 95, GetColor(0, 255, 255), FALSE);
+    // Player HP
+    DrawStringToHandle(10, 60, L"SYSTEM INTEGRITY", GetColor(0, 255, 255), hudFontHandle);
+    DrawBox(10, 90, 310, 105, GetColor(50, 50, 50), TRUE);
+    DrawBox(10, 90, 10 + (int)(player->GetHP() * 3), 105, GetColor(0, 255, 150), TRUE);
+    DrawBox(10, 90, 310, 105, GetColor(0, 255, 255), FALSE);
+    
+    DrawFormatStringToHandle(10, 115, GetColor(255, 215, 0), hudFontHandle, L"SCORE: %06d", g_Score);
 
-    DrawStringToHandle(500, 50, L"TARGET INTEGRITY (BOSS)", GetColor(255, 100, 100), hudFontHandle);
-    DrawBox(580, 80, 780, 95, GetColor(50, 50, 50), TRUE);
+    // Boss HP
+    DrawStringToHandle(480, 60, L"TARGET INTEGRITY", GetColor(255, 100, 100), hudFontHandle);
+    DrawBox(480, 90, 780, 105, GetColor(50, 50, 50), TRUE);
     int bossMaxHp = (g_Difficulty == GameDifficulty::EASY) ? 300 : (g_Difficulty == GameDifficulty::HARD) ? 1000 : 500;
-    DrawBox(580, 80, 580 + (int)(boss->GetHP() * 200.0f / bossMaxHp), 95, GetColor(255, 50, 50), TRUE);
-    DrawBox(580, 80, 780, 95, GetColor(255, 100, 100), FALSE);
+    DrawBox(480, 90, 480 + (int)(boss->GetHP() * 300.0f / bossMaxHp), 105, GetColor(255, 50, 50), TRUE);
+    DrawBox(480, 90, 780, 105, GetColor(255, 100, 100), FALSE);
 
     int yPos = 550;
     SetDrawBlendMode(DX_BLENDMODE_ALPHA, 180);
@@ -142,6 +239,14 @@ void MainScene::Draw() {
     } else {
         DrawStringToHandle(20, yPos + 5, L"MODE: [BARRIER] - SHIELD ACTIVE", GetColor(100, 200, 255), hudFontHandle);
     }
+    
+    // Draw Current Buff
+    const wchar_t* buffName = L"NONE";
+    if (g_Buff == BuffType::LASER) buffName = L"PIERCING LASER";
+    else if (g_Buff == BuffType::BOMB) buffName = L"EXPLOSIVE ROUNDS";
+    else if (g_Buff == BuffType::SPEED) buffName = L"SPEED BOOST";
+    DrawStringToHandle(450, yPos + 5, L"BUFF:", GetColor(255, 255, 0), hudFontHandle);
+    DrawStringToHandle(530, yPos + 5, buffName, GetColor(255, 255, 255), hudFontHandle);
 }
 
 void MainScene::Finalize() {

@@ -87,16 +87,39 @@ void Boss::Draw() {
             DrawSphere3D(glitchPos, radius, 32, GetColor(0, 255, 255), GetColor(255,255,255), TRUE);
         }
     } else {
-        DrawSphere3D(pos, radius, 32, GetColor(60, 60, 60), GetColor(255,255,255), TRUE);
+        // --- Procedural 3D Model: Mechanical Fortress ---
         
-        VECTOR eyePos = VAdd(pos, VGet(0, 10.0f, -radius * 0.9f));
-        DrawSphere3D(eyePos, radius * 0.3f, 16, GetColor(255, 0, 0), GetColor(255,255,255), TRUE);
+        // Central Hull
+        VECTOR top = VAdd(pos, VGet(0, radius * 0.8f, 0));
+        VECTOR bottom = VAdd(pos, VGet(0, -radius * 0.5f, 0));
+        DrawCapsule3D(top, bottom, radius, 32, GetColor(180, 180, 200), GetColor(255, 255, 255), TRUE);
         
-        float angle = stateTimer * 0.1f;
-        VECTOR part1 = VAdd(pos, VGet(cos(angle) * radius * 1.5f, 0, sin(angle) * radius * 1.5f));
-        VECTOR part2 = VAdd(pos, VGet(cos(angle + 3.14f) * radius * 1.5f, 0, sin(angle + 3.14f) * radius * 1.5f));
+        // Armor plates (rotating ring)
+        float armorAngle = stateTimer * 0.05f;
+        for (int i = 0; i < 4; i++) {
+            float a = armorAngle + (3.14159f / 2.0f) * i;
+            VECTOR platePos = VAdd(pos, VGet(cos(a) * radius * 1.4f, 0, sin(a) * radius * 1.4f));
+            DrawSphere3D(platePos, radius * 0.4f, 16, GetColor(200, 200, 220), GetColor(255,255,255), TRUE);
+            
+            VECTOR spikeEnd = VAdd(platePos, VGet(cos(a) * radius * 2.0f, 0, sin(a) * radius * 2.0f));
+            DrawCone3D(platePos, spikeEnd, radius * 0.2f, 8, GetColor(150, 0, 0), GetColor(255, 255, 255), TRUE);
+        }
+        
+        // Main eye (glowing red)
+        VECTOR eyePos = VAdd(pos, VGet(0, 10.0f, -radius * 0.95f));
+        SetDrawBlendMode(DX_BLENDMODE_ADD, 200);
+        DrawSphere3D(eyePos, radius * 0.4f, 16, GetColor(255, 0, 0), GetColor(255, 255, 255), TRUE);
+        SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
+        DrawSphere3D(eyePos, radius * 0.2f, 16, GetColor(255, 200, 200), GetColor(255, 255, 255), TRUE);
+        
+        // Floating energy parts
+        float energyAngle = -stateTimer * 0.1f;
+        VECTOR part1 = VAdd(pos, VGet(cos(energyAngle) * radius * 1.5f, -radius * 0.8f, sin(energyAngle) * radius * 1.5f));
+        VECTOR part2 = VAdd(pos, VGet(cos(energyAngle + 3.14f) * radius * 1.5f, -radius * 0.8f, sin(energyAngle + 3.14f) * radius * 1.5f));
+        SetDrawBlendMode(DX_BLENDMODE_ADD, 150);
         DrawSphere3D(part1, radius * 0.2f, 8, GetColor(0, 255, 255), GetColor(255,255,255), TRUE);
         DrawSphere3D(part2, radius * 0.2f, 8, GetColor(0, 255, 255), GetColor(255,255,255), TRUE);
+        SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
     }
 
     for (const auto& b : bullets) {

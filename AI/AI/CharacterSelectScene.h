@@ -1,12 +1,13 @@
 #pragma once
 #include "Scene.h"
 
-class ResultScene : public BaseScene {
+class CharacterSelectScene : public BaseScene {
 private:
     int timer;
     int mainFontHandle;
     int subFontHandle;
     int bgImageHandle;
+    
 public:
     void Initialize() override;
     SceneType Update() override;

@@ -139,6 +139,7 @@
     <ClCompile Include="Player.cpp" />
     <ClCompile Include="Boss.cpp" />
     <ClCompile Include="EffectManager.cpp" />
+    <ClCompile Include="CharacterSelectScene.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="GameOverScene.h" />
@@ -152,6 +153,7 @@
     <ClInclude Include="Player.h" />
     <ClInclude Include="Boss.h" />
     <ClInclude Include="EffectManager.h" />
+    <ClInclude Include="CharacterSelectScene.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

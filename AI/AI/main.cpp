@@ -1,14 +1,43 @@
 #include "DxLib.h"
 #include "SceneManager.h"
 #include "GameTypes.h"
+#include <fstream>
+#include <algorithm>
 
 GameDifficulty g_Difficulty = GameDifficulty::NORMAL;
+BuffType g_Buff = BuffType::NONE;
+int g_Score = 0;
+std::vector<int> g_Ranking;
+
+void LoadRanking() {
+    g_Ranking.clear();
+    std::ifstream ifs("ranking.txt");
+    if (ifs) {
+        int score;
+        while (ifs >> score) {
+            g_Ranking.push_back(score);
+        }
+    }
+    std::sort(g_Ranking.rbegin(), g_Ranking.rend());
+    if (g_Ranking.size() > 5) g_Ranking.resize(5);
+}
+
+void SaveRanking(int newScore) {
+    g_Ranking.push_back(newScore);
+    std::sort(g_Ranking.rbegin(), g_Ranking.rend());
+    if (g_Ranking.size() > 5) g_Ranking.resize(5);
+    
+    std::ofstream ofs("ranking.txt");
+    for (int s : g_Ranking) {
+        ofs << s << "\n";
+    }
+}
 
 // プログラムは WinMain から始まります
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
 {
     // ウィンドウモードで起動するように設定（フルスクリーンを回避）
-    ChangeWindowMode(TRUE);
+    ChangeWindowMode(FALSE);
     
     // 画面の解像度を設定 (例: 幅800px, 高さ600px)
     SetGraphMode(800, 600, 32);
@@ -23,6 +52,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 
     // 描画先を「裏画面」に設定（画面のちらつきを防止するための必須設定）
     SetDrawScreen(DX_SCREEN_BACK);
+
+    LoadRanking();
 
     // シーンマネージャー（画面遷移を管理するもの）を作成して初期化
     SceneManager* sceneManager = new SceneManager();
