@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "Scene.h"
 
 class CharacterSelectScene : public BaseScene {
@@ -6,6 +6,7 @@ private:
     int timer;
     int mainFontHandle;
     int subFontHandle;
+    int difficultyFontHandle;
     int bgImageHandle;
     
 public:

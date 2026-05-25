@@ -1,4 +1,4 @@
-#include "ResultScene.h"
+﻿#include "ResultScene.h"
 #include "GameTypes.h"
 #include "DxLib.h"
 #include <math.h>
@@ -9,11 +9,17 @@ void ResultScene::Initialize() {
     subFontHandle = CreateFontToHandle(L"Arial Black", 24, 3, DX_FONTTYPE_ANTIALIASING_EDGE);
     bgImageHandle = LoadGraph(L"bg_cyberpunk.png");
     SaveRanking(g_Score);
+    
+    
+    PlayMusic(L"C:\\Windows\\Media\\flourish.mid", DX_PLAYTYPE_LOOP);
 }
 
 SceneType ResultScene::Update() {
     timer++;
-    if (CheckHitKey(KEY_INPUT_RETURN) == 1) {
+    if (timer < 30) return SceneType::RESULT; 
+    
+    if (CheckHitKey(KEY_INPUT_RETURN) == 1 || (GetMouseInput() & MOUSE_INPUT_LEFT) != 0) {
+        PlaySoundFile(L"C:\\Windows\\Media\\Windows Hardware Remove.wav", DX_PLAYTYPE_BACK);
         return SceneType::TITLE;
     }
     return SceneType::RESULT;
@@ -22,7 +28,7 @@ SceneType ResultScene::Update() {
 void ResultScene::Draw() {
     DrawExtendGraph(0, 0, 800, 600, bgImageHandle, TRUE);
 
-    // Draw dark semi-transparent panel for readability
+    
     SetDrawBlendMode(DX_BLENDMODE_ALPHA, 180);
     DrawBox(80, 120, 720, 480, GetColor(0, 30, 0), TRUE);
     DrawBox(80, 120, 720, 480, GetColor(0, 255, 0), FALSE);

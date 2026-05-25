@@ -3,10 +3,10 @@
 
 class SceneManager {
 private:
-    BaseScene* currentScene;    // 現在表示しているシーンの本体
-    SceneType currentSceneType; // 現在表示しているシーンの種類
+    BaseScene* currentScene;    
+    SceneType currentSceneType; 
 
-    // シーンを切り替える内部関数
+    
     void ChangeScene(SceneType nextScene);
 
 public:

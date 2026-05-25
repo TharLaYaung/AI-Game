@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "Scene.h"
 
 class TitleScene : public BaseScene {
@@ -8,6 +8,9 @@ private:
     int subFontHandle;
     int difficultyFontHandle;
     int bgImageHandle;
+    int menuIndex;
+    bool showSettings;
+    int inputCooldown;
 public:
     void Initialize() override;
     SceneType Update() override;

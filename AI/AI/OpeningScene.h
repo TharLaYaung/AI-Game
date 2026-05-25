@@ -1,11 +1,15 @@
 ﻿#pragma once
 #include "Scene.h"
+#include "GameTypes.h"
 
-class RankingScene : public BaseScene {
+class OpeningScene : public BaseScene {
 private:
     int timer;
     int titleFontHandle;
-    int subFontHandle;
+    int smallFontHandle;
+    int cyberFontHandle;
+    int bgImageHandle;
+
 public:
     void Initialize() override;
     SceneType Update() override;

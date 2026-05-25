@@ -134,12 +134,14 @@
     <ClCompile Include="MainScene.cpp" />
     <ClCompile Include="ResultScene.cpp" />
     <ClCompile Include="SceneManager.cpp" />
+    <ClCompile Include="OpeningScene.cpp" />
     <ClCompile Include="TitleScene.cpp" />
     <ClCompile Include="RankingScene.cpp" />
     <ClCompile Include="Player.cpp" />
     <ClCompile Include="Boss.cpp" />
     <ClCompile Include="EffectManager.cpp" />
     <ClCompile Include="CharacterSelectScene.cpp" />
+    <ClCompile Include="LoadingScene.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="GameOverScene.h" />
@@ -147,6 +149,7 @@
     <ClInclude Include="ResultScene.h" />
     <ClInclude Include="Scene.h" />
     <ClInclude Include="SceneManager.h" />
+    <ClInclude Include="OpeningScene.h" />
     <ClInclude Include="TitleScene.h" />
     <ClInclude Include="RankingScene.h" />
     <ClInclude Include="GameTypes.h" />
@@ -154,6 +157,7 @@
     <ClInclude Include="Boss.h" />
     <ClInclude Include="EffectManager.h" />
     <ClInclude Include="CharacterSelectScene.h" />
+    <ClInclude Include="LoadingScene.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "Scene.h"
 #include "Player.h"
 #include "Boss.h"
@@ -16,6 +16,18 @@ struct Item {
     VECTOR pos;
     BuffType type;
     bool active;
+    int timer; 
+};
+
+struct Star {
+    VECTOR pos;
+    float speed;
+    int color;
+};
+
+enum class MainState {
+    PLAYING,
+    MID_BUFF_SELECT
 };
 
 class MainScene : public BaseScene {
@@ -25,10 +37,22 @@ private:
     EffectManager* effectManager;
     int clearTimer;
     
+    MainState currentState;
+    int midBuffIndex;
+    int midBuffCooldown;
+    int buffSelectTimer;
+    
+    int cardLaserImg;
+    int cardBombImg;
+    int cardSpeedImg;
+    
     std::vector<MiniEnemy> miniEnemies;
     std::vector<Item> items;
+    std::vector<Star> stars;
     
-    int bgImageHandle;
+    VECTOR camPos;
+    bool isPaused;
+    
     int hudFontHandle;
     int smallFontHandle;
 

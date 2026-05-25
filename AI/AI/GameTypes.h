@@ -2,17 +2,17 @@
 #include "DxLib.h"
 #include <vector>
 
-// 弾の構造体
+
 struct Bullet {
-    VECTOR pos;      // 位置
-    VECTOR dir;      // 進行方向
-    float speed;     // スピード
-    float radius;    // 当たり判定の半径
-    bool active;     // 有効かどうか
-    bool isReflected;// ボスに跳ね返された弾かどうか
+    VECTOR pos;      
+    VECTOR dir;      
+    float speed;     
+    float radius;    
+    bool active;     
+    bool isReflected;
 };
 
-// プレイヤーのフォーム
+
 enum class PlayerForm {
     ATTACK,
     BARRIER
@@ -28,13 +28,20 @@ enum class BuffType {
     NONE,
     LASER,
     BOMB,
-    SPEED
+    SPEED,
+    HEAL,
+    SHIELD,
+    LASER_WEAPON
 };
 
 extern GameDifficulty g_Difficulty;
 extern BuffType g_Buff;
 extern int g_Score;
 extern std::vector<int> g_Ranking;
+extern bool g_ExitGame;
+
+#include "Scene.h"
+extern SceneType g_TargetScene;
 
 void LoadRanking();
 void SaveRanking(int newScore);

@@ -22,7 +22,7 @@ public:
     void Update();
     void Draw();
     
-    // エフェクトを発生させる
+    
     void AddExplosion(VECTOR pos, int color, int count);
     void AddTeleport(VECTOR pos);
 };

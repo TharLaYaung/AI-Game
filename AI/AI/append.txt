@@ -1,0 +1,20 @@
+﻿            VECTOR endPos = VAdd(b.pos, VScale(b.dir, 20.0f));
+            DrawCapsule3D(b.pos, endPos, b.radius, 16, GetColor(255, 255, 255), GetColor(255, 255, 255), TRUE);
+        }
+    }
+    
+    for (const auto& fb : fireBombs) {
+        if (!fb.active) continue;
+        if (fb.warningTimer > 0) {
+            SetDrawBlendMode(DX_BLENDMODE_ALPHA, 150);
+            DrawCylinder3D(VGet(fb.pos.x, -5.0f, fb.pos.z), VGet(fb.pos.x, 5.0f, fb.pos.z), fb.radius, 16, GetColor(255, 100, 0), GetColor(255, 100, 0), TRUE);
+            SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
+        } else if (fb.activeTimer > 0) {
+            int alpha = 150 + GetRand(100);
+            SetDrawBlendMode(DX_BLENDMODE_ADD, alpha);
+            DrawSphere3D(VGet(fb.pos.x, 0.0f, fb.pos.z), fb.radius, 16, GetColor(255, 50, 0), GetColor(255, 255, 255), TRUE);
+            DrawSphere3D(VGet(fb.pos.x, 0.0f, fb.pos.z), fb.radius * 0.7f, 16, GetColor(255, 255, 0), GetColor(255, 255, 255), TRUE);
+            SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
+        }
+    }
+}

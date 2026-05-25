@@ -1,4 +1,4 @@
-#include "EffectManager.h"
+﻿#include "EffectManager.h"
 #include <math.h>
 
 EffectManager::EffectManager() {}
