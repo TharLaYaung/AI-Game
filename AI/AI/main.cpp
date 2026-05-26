@@ -1,4 +1,4 @@
-﻿#include "DxLib.h"
+#include "DxLib.h"
 #include "SceneManager.h"
 #include "GameTypes.h"
 #include <fstream>
@@ -6,8 +6,9 @@
 
 GameDifficulty g_Difficulty = GameDifficulty::NORMAL;
 BuffType g_Buff = BuffType::NONE;
+int g_BuffLevel = 1;
 int g_Score = 0;
-std::vector<int> g_Ranking;
+std::vector<RankRecord> g_Ranking;
 SceneType g_TargetScene = SceneType::TITLE;
 bool g_ExitGame = false;
 
@@ -15,23 +16,28 @@ void LoadRanking() {
     g_Ranking.clear();
     std::ifstream ifs("ranking.txt");
     if (ifs) {
+        std::string name;
         int score;
-        while (ifs >> score) {
-            g_Ranking.push_back(score);
+        while (ifs >> name >> score) {
+            g_Ranking.push_back({name, score});
         }
     }
-    std::sort(g_Ranking.rbegin(), g_Ranking.rend());
+    std::sort(g_Ranking.begin(), g_Ranking.end(), [](const RankRecord& a, const RankRecord& b) {
+        return a.score > b.score;
+    });
     if (g_Ranking.size() > 5) g_Ranking.resize(5);
 }
 
-void SaveRanking(int newScore) {
-    g_Ranking.push_back(newScore);
-    std::sort(g_Ranking.rbegin(), g_Ranking.rend());
+void SaveRanking(const std::string& name, int newScore) {
+    g_Ranking.push_back({name, newScore});
+    std::sort(g_Ranking.begin(), g_Ranking.end(), [](const RankRecord& a, const RankRecord& b) {
+        return a.score > b.score;
+    });
     if (g_Ranking.size() > 5) g_Ranking.resize(5);
     
     std::ofstream ofs("ranking.txt");
-    for (int s : g_Ranking) {
-        ofs << s << "\n";
+    for (const auto& r : g_Ranking) {
+        ofs << r.name << " " << r.score << "\n";
     }
 }
 

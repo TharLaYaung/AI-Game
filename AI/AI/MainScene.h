@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include "Scene.h"
 #include "Player.h"
 #include "Boss.h"
@@ -55,6 +55,9 @@ private:
     
     int hudFontHandle;
     int smallFontHandle;
+    
+    int realmWarpTimer;
+    int realmColorMode;
 
 public:
     void Initialize() override;

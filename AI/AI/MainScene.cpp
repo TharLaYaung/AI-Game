@@ -14,6 +14,8 @@ void MainScene::Initialize() {
     effectManager->Initialize();
 
     clearTimer = 0;
+    realmWarpTimer = 0;
+    realmColorMode = 0;
     currentState = MainState::PLAYING;
     midBuffIndex = 1; 
     midBuffCooldown = 0;
@@ -70,6 +72,18 @@ SceneType MainScene::Update() {
         return SceneType::MAIN;
     }
 
+    if (realmWarpTimer > 0) {
+        realmWarpTimer--;
+        for (auto& s : stars) {
+            s.pos.z -= s.speed * 20.0f;
+            if (s.pos.z < -1000.0f) {
+                s.pos.z = 3000.0f;
+                s.pos.x = (float)(GetRand(4000) - 2000);
+                s.pos.y = (float)(GetRand(2000) - 1000);
+            }
+        }
+    }
+
     if (currentState == MainState::MID_BUFF_SELECT) {
         buffSelectTimer++;
         if (midBuffCooldown > 0) midBuffCooldown--;
@@ -87,7 +101,13 @@ SceneType MainScene::Update() {
                         PlaySoundFile(L"C:\\Windows\\Media\\Windows Navigation Start.wav", DX_PLAYTYPE_BACK);
                     }
                     if ((GetMouseInput() & MOUSE_INPUT_LEFT) != 0) {
-                        g_Buff = (midBuffIndex == 0) ? BuffType::LASER : (midBuffIndex == 1) ? BuffType::BOMB : BuffType::SPEED;
+                        BuffType selectedBuff = (midBuffIndex == 0) ? BuffType::LASER : (midBuffIndex == 1) ? BuffType::BOMB : BuffType::SPEED;
+                        if (g_Buff == selectedBuff) {
+                            if (g_BuffLevel < 2) g_BuffLevel++;
+                        } else {
+                            g_Buff = selectedBuff;
+                            g_BuffLevel = 1;
+                        }
                         currentState = MainState::PLAYING;
                         SetMouseDispFlag(FALSE);
                         PlaySoundFile(L"C:\\Windows\\Media\\Windows Hardware Remove.wav", DX_PLAYTYPE_BACK);
@@ -110,7 +130,13 @@ SceneType MainScene::Update() {
             }
             
             if (CheckHitKey(KEY_INPUT_RETURN)) {
-                g_Buff = (midBuffIndex == 0) ? BuffType::LASER : (midBuffIndex == 1) ? BuffType::BOMB : BuffType::SPEED;
+                BuffType selectedBuff = (midBuffIndex == 0) ? BuffType::LASER : (midBuffIndex == 1) ? BuffType::BOMB : BuffType::SPEED;
+                if (g_Buff == selectedBuff) {
+                    if (g_BuffLevel < 2) g_BuffLevel++;
+                } else {
+                    g_Buff = selectedBuff;
+                    g_BuffLevel = 1;
+                }
                 currentState = MainState::PLAYING;
                 SetMouseDispFlag(FALSE);
                 PlaySoundFile(L"C:\\Windows\\Media\\Windows Hardware Remove.wav", DX_PLAYTYPE_BACK);
@@ -123,6 +149,8 @@ SceneType MainScene::Update() {
     if (boss->GetHP() <= 0) {
         if (!boss->IsFinalForm()) {
             boss->EnterFinalForm();
+            realmWarpTimer = 180;
+            realmColorMode = 1;
             effectManager->AddExplosion(boss->GetPos(), GetColor(0, 255, 255), 200.0f);
             PlaySoundFile(L"C:\\Windows\\Media\\Windows Hardware Remove.wav", DX_PLAYTYPE_BACK);
             PlaySoundFile(L"C:\\Windows\\Media\\Ring08.wav", DX_PLAYTYPE_LOOP); 
@@ -144,7 +172,9 @@ SceneType MainScene::Update() {
             }
             
             clearTimer++;
-            if (clearTimer > 180) return SceneType::RESULT; 
+            if (clearTimer > 180) {
+                return SceneType::RANKING; 
+            }
         }
     }
     if (player->GetHP() <= 0) {
@@ -194,9 +224,11 @@ SceneType MainScene::Update() {
             if (!e.active) continue;
             VECTOR diff = VSub(e.pos, b.pos);
             if (VSquareSize(diff) < 1500.0f) {
-                e.hp -= (g_Buff == BuffType::BOMB) ? 20 : 10;
+                int dmg = (g_Buff == BuffType::BOMB) ? ((g_BuffLevel == 2) ? 40 : 20) : ((g_Buff == BuffType::LASER && g_BuffLevel == 2) ? 20 : 10);
+                e.hp -= dmg;
                 if (g_Buff != BuffType::LASER) b.active = false;
-                effectManager->AddExplosion(b.pos, GetColor(255, 255, 0), (g_Buff == BuffType::BOMB) ? 30 : 10);
+                int explosionRad = (g_Buff == BuffType::BOMB) ? ((g_BuffLevel == 2) ? 60 : 30) : 10;
+                effectManager->AddExplosion(b.pos, GetColor(255, 255, 0), explosionRad);
                 
                 if (e.hp <= 0) {
                     e.active = false;
@@ -223,10 +255,12 @@ SceneType MainScene::Update() {
 
         VECTOR diff = VSub(boss->GetPos(), b.pos);
         if (VSquareSize(diff) < (b.radius + boss->GetRadius() + 80.0f) * (b.radius + boss->GetRadius() + 80.0f)) {
-            boss->Damage((g_Buff == BuffType::BOMB) ? 20 : 10);
-            g_Score += (g_Buff == BuffType::BOMB) ? 20 : 10;
+            int dmg = (g_Buff == BuffType::BOMB) ? ((g_BuffLevel == 2) ? 40 : 20) : ((g_Buff == BuffType::LASER && g_BuffLevel == 2) ? 20 : 10);
+            boss->Damage(dmg);
+            g_Score += dmg;
             if (g_Buff != BuffType::LASER) b.active = false;
-            effectManager->AddExplosion(b.pos, GetColor(255, 255, 0), (g_Buff == BuffType::BOMB) ? 30 : 10);
+            int explosionRad = (g_Buff == BuffType::BOMB) ? ((g_BuffLevel == 2) ? 60 : 30) : 10;
+            effectManager->AddExplosion(b.pos, GetColor(255, 255, 0), explosionRad);
             PlaySoundFile(L"C:\\Windows\\Media\\Windows Critical Stop.wav", DX_PLAYTYPE_BACK);
         }
     }
@@ -381,7 +415,12 @@ SceneType MainScene::Update() {
                 g_Score += 200;
                 PlaySoundFile(L"C:\\Windows\\Media\\Windows Navigation Start.wav", DX_PLAYTYPE_BACK);
             } else {
-                g_Buff = it.type;
+                if (g_Buff == it.type) {
+                    if (g_BuffLevel < 2) g_BuffLevel++;
+                } else {
+                    g_Buff = it.type;
+                    g_BuffLevel = 1;
+                }
                 g_Score += 500;
                 PlaySoundFile(L"C:\\Windows\\Media\\Windows Navigation Start.wav", DX_PLAYTYPE_BACK);
             }
@@ -414,14 +453,21 @@ void MainScene::Draw() {
     int basex = ((int)pPos.x / 200) * 200;
     int basez = ((int)pPos.z / 200) * 200;
     
+    int gridColorH = (realmColorMode == 1) ? GetColor(255, 50, 50) : GetColor(0, 255, 100);
+    int gridColorV = (realmColorMode == 1) ? GetColor(200, 0, 150) : GetColor(0, 150, 255);
+
+    int warpShakeX = (realmWarpTimer > 0) ? GetRand(20) - 10 : 0;
+    int warpShakeY = (realmWarpTimer > 0) ? GetRand(20) - 10 : 0;
+    int warpShakeZ = (realmWarpTimer > 0) ? GetRand(20) - 10 : 0;
+
     SetDrawBlendMode(DX_BLENDMODE_ALPHA, 80);
     for (int i = -1600; i <= 1600; i += 200) {
         
-        DrawLine3D(VGet(basex + (float)i, -300.0f, basez - 1600.0f), VGet(basex + (float)i, -300.0f, basez + 1600.0f), GetColor(0, 255, 100));
-        DrawLine3D(VGet(basex - 1600.0f, -300.0f, basez + (float)i), VGet(basex + 1600.0f, -300.0f, basez + (float)i), GetColor(0, 255, 100));
+        DrawLine3D(VGet(basex + (float)i + warpShakeX, -300.0f + warpShakeY, basez - 1600.0f + warpShakeZ), VGet(basex + (float)i + warpShakeX, -300.0f + warpShakeY, basez + 1600.0f + warpShakeZ), gridColorH);
+        DrawLine3D(VGet(basex - 1600.0f + warpShakeX, -300.0f + warpShakeY, basez + (float)i + warpShakeZ), VGet(basex + 1600.0f + warpShakeX, -300.0f + warpShakeY, basez + (float)i + warpShakeZ), gridColorH);
         
-        DrawLine3D(VGet(basex + (float)i, 700.0f, basez - 1600.0f), VGet(basex + (float)i, 700.0f, basez + 1600.0f), GetColor(0, 150, 255));
-        DrawLine3D(VGet(basex - 1600.0f, 700.0f, basez + (float)i), VGet(basex + 1600.0f, 700.0f, basez + (float)i), GetColor(0, 150, 255));
+        DrawLine3D(VGet(basex + (float)i + warpShakeX, 700.0f + warpShakeY, basez - 1600.0f + warpShakeZ), VGet(basex + (float)i + warpShakeX, 700.0f + warpShakeY, basez + 1600.0f + warpShakeZ), gridColorV);
+        DrawLine3D(VGet(basex - 1600.0f + warpShakeX, 700.0f + warpShakeY, basez + (float)i + warpShakeZ), VGet(basex + 1600.0f + warpShakeX, 700.0f + warpShakeY, basez + (float)i + warpShakeZ), gridColorV);
     }
     SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
 
@@ -548,20 +594,20 @@ void MainScene::Draw() {
     float pRatio = (float)player->GetHP() / 100.0f; 
     if (pRatio < 0.0f) pRatio = 0.0f;
     DrawStringToHandle(blX + 10, blY + 45, L"HP", GetColor(255, 100, 100), smallFontHandle);
-    DrawBox(blX + 80, blY + 45, blX + 310, blY + 55, GetColor(50, 20, 20), TRUE);
-    DrawBox(blX + 80, blY + 45, blX + 80 + (int)(pRatio * 230.0f), blY + 55, GetColor(255, 50, 50), TRUE);
+    DrawBox(blX + 110, blY + 45, blX + 310, blY + 55, GetColor(50, 20, 20), TRUE);
+    DrawBox(blX + 110, blY + 45, blX + 110 + (int)(pRatio * 200.0f), blY + 55, GetColor(255, 50, 50), TRUE);
     
     float barrierRatio = player->GetBarrierGauge() / player->GetMaxBarrierGauge();
     DrawStringToHandle(blX + 10, blY + 65, L"BARRIER", GetColor(200, 100, 255), smallFontHandle);
-    DrawBox(blX + 80, blY + 65, blX + 310, blY + 75, GetColor(20, 20, 50), TRUE);
-    DrawBox(blX + 80, blY + 65, blX + 80 + (int)(barrierRatio * 230.0f), blY + 75, GetColor(200, 50, 255), TRUE);
+    DrawBox(blX + 110, blY + 65, blX + 310, blY + 75, GetColor(20, 20, 50), TRUE);
+    DrawBox(blX + 110, blY + 65, blX + 110 + (int)(barrierRatio * 200.0f), blY + 75, GetColor(200, 50, 255), TRUE);
     
     if (player->HasLaserWeapon() || player->IsOverheated()) {
         float heatRatio = player->GetLaserHeat() / 100.0f;
         int heatColor = player->IsOverheated() ? GetColor(255, 0, 0) : GetColor(255, 100, 0);
         DrawStringToHandle(blX + 10, blY + 85, player->IsOverheated() ? L"OVERHEAT" : L"LASER", heatColor, smallFontHandle);
-        DrawBox(blX + 80, blY + 85, blX + 310, blY + 95, GetColor(50, 0, 0), TRUE);
-        DrawBox(blX + 80, blY + 85, blX + 80 + (int)(heatRatio * 230.0f), blY + 95, heatColor, TRUE);
+        DrawBox(blX + 110, blY + 85, blX + 310, blY + 95, GetColor(50, 0, 0), TRUE);
+        DrawBox(blX + 110, blY + 85, blX + 110 + (int)(heatRatio * 200.0f), blY + 95, heatColor, TRUE);
     }
 
     
@@ -579,12 +625,12 @@ void MainScene::Draw() {
     }
     
     const wchar_t* buffName = L"NONE";
-    if (g_Buff == BuffType::LASER) buffName = L"PIERCING LASER";
-    else if (g_Buff == BuffType::BOMB) buffName = L"EXPLOSIVE ROUNDS";
-    else if (g_Buff == BuffType::SPEED) buffName = L"SPEED BOOST";
+    if (g_Buff == BuffType::LASER) buffName = (g_BuffLevel == 2) ? L"PIERCING LASER [LV 2]" : L"PIERCING LASER";
+    else if (g_Buff == BuffType::BOMB) buffName = (g_BuffLevel == 2) ? L"EXPLOSIVE ROUNDS [LV 2]" : L"EXPLOSIVE ROUNDS";
+    else if (g_Buff == BuffType::SPEED) buffName = (g_BuffLevel == 2) ? L"SPEED BOOST [LV 2]" : L"SPEED BOOST";
     
     DrawStringToHandle(brX + 10, brY + 50, L"BUFF:", GetColor(255, 200, 0), smallFontHandle);
-    DrawStringToHandle(brX + 70, brY + 45, buffName, GetColor(255, 255, 255), hudFontHandle);
+    DrawStringToHandle(brX + 70, brY + 50, buffName, GetColor(255, 255, 255), smallFontHandle);
 
     
     int warn = boss->GetLaserStrikeWarningTimer();
@@ -687,6 +733,14 @@ void MainScene::Draw() {
         
         DrawStringToHandle(200, 480 + slideY, L"PRESS ENTER TO EQUIP AND RESUME", GetColor(255, 255, 255), hudFontHandle);
         DeleteFontToHandle(headerFont);
+    }
+    
+    if (boss->GetHP() <= 0 && boss->IsFinalForm() && clearTimer > 0) {
+        int alpha = (clearTimer * 255) / 180;
+        if (alpha > 255) alpha = 255;
+        SetDrawBlendMode(DX_BLENDMODE_ALPHA, alpha);
+        DrawBox(0, 0, 800, 600, GetColor(255, 255, 255), TRUE);
+        SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
     }
 }
 

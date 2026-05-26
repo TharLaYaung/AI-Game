@@ -24,7 +24,8 @@ void Player::Initialize() {
 void Player::Update() {
     if (shieldBuffTimer > 0) shieldBuffTimer--;
 
-    float moveSpeed = (g_Buff == BuffType::SPEED) ? 8.0f : 5.0f;
+    float moveSpeed = 5.0f;
+    if (g_Buff == BuffType::SPEED) moveSpeed = (g_BuffLevel == 2) ? 12.0f : 8.0f;
 
     if (CheckHitKey(KEY_INPUT_W) || CheckHitKey(KEY_INPUT_UP))    pos.z += moveSpeed;
     if (CheckHitKey(KEY_INPUT_S) || CheckHitKey(KEY_INPUT_DOWN))  pos.z -= moveSpeed;
@@ -95,7 +96,8 @@ void Player::Update() {
     }
     
     static int attackCooldown = 0;
-    int cooldownLimit = (g_Buff == BuffType::SPEED) ? 5 : 10;
+    int cooldownLimit = 10;
+    if (g_Buff == BuffType::SPEED) cooldownLimit = (g_BuffLevel == 2) ? 3 : 5;
     attackCooldown++;
     
     if (muzzleFlashTimer > 0) muzzleFlashTimer--;
@@ -107,7 +109,7 @@ void Player::Update() {
         b.pos = pos;
         b.dir = VGet(0, 0, 1.0f);
         b.speed = (g_Buff == BuffType::SPEED) ? 25.0f : 15.0f;
-        b.radius = (g_Buff == BuffType::BOMB) ? 15.0f : 5.0f; 
+        b.radius = (g_Buff == BuffType::BOMB) ? 15.0f : ((g_Buff == BuffType::LASER && g_BuffLevel == 2) ? 10.0f : 5.0f);
         b.active = true;
         b.isReflected = false;
         bullets.push_back(b);
@@ -186,9 +188,9 @@ void Player::Draw() {
     }
 
     int bulletColor = GetColor(0, 200, 255); 
-    if (g_Buff == BuffType::LASER) bulletColor = GetColor(255, 50, 255); 
-    else if (g_Buff == BuffType::BOMB) bulletColor = GetColor(255, 100, 0); 
-    else if (g_Buff == BuffType::SPEED) bulletColor = GetColor(50, 255, 100); 
+    if (g_Buff == BuffType::LASER) bulletColor = (g_BuffLevel == 2) ? GetColor(255, 150, 255) : GetColor(255, 50, 255); 
+    else if (g_Buff == BuffType::BOMB) bulletColor = (g_BuffLevel == 2) ? GetColor(255, 200, 0) : GetColor(255, 100, 0); 
+    else if (g_Buff == BuffType::SPEED) bulletColor = (g_BuffLevel == 2) ? GetColor(100, 255, 150) : GetColor(50, 255, 100); 
 
     for (const auto& b : bullets) {
         if (b.active) {
