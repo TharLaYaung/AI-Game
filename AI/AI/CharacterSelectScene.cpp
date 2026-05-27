@@ -9,6 +9,7 @@ void CharacterSelectScene::Initialize() {
     subFontHandle = CreateFontToHandle(L"Consolas", 32, 4, DX_FONTTYPE_ANTIALIASING_EDGE_8X8);
     difficultyFontHandle = CreateFontToHandle(L"Arial Black", 24, 3, DX_FONTTYPE_ANTIALIASING_EDGE_8X8);
     bgImageHandle = LoadGraph(L"bg_cyberpunk.png");
+    selectedBuff = BuffType::NONE;
 }
 
 SceneType CharacterSelectScene::Update() {
@@ -37,8 +38,8 @@ SceneType CharacterSelectScene::Update() {
             int y = 240 + i * 50;
             if (mouseX >= 480 && mouseX <= 700 && mouseY >= y && mouseY <= y + 40) {
                 BuffType buff = (i == 0) ? BuffType::NONE : (i == 1) ? BuffType::LASER : (i == 2) ? BuffType::BOMB : BuffType::SPEED;
-                if (g_Buff != buff) {
-                    g_Buff = buff;
+                if (selectedBuff != buff) {
+                    selectedBuff = buff;
                     PlaySoundFile(L"C:\\Windows\\Media\\Windows Navigation Start.wav", DX_PLAYTYPE_BACK);
                 }
             }
@@ -63,26 +64,30 @@ SceneType CharacterSelectScene::Update() {
         
         if (CheckHitKey(KEY_INPUT_LEFT) == 1 || CheckHitKey(KEY_INPUT_A) == 1) {
             PlaySoundFile(L"C:\\Windows\\Media\\Windows Navigation Start.wav", DX_PLAYTYPE_BACK);
-            if (g_Buff == BuffType::LASER) g_Buff = BuffType::NONE;
-            else if (g_Buff == BuffType::BOMB) g_Buff = BuffType::LASER;
-            else if (g_Buff == BuffType::SPEED) g_Buff = BuffType::BOMB;
-            else if (g_Buff == BuffType::NONE) g_Buff = BuffType::SPEED;
+            if (selectedBuff == BuffType::LASER) selectedBuff = BuffType::NONE;
+            else if (selectedBuff == BuffType::BOMB) selectedBuff = BuffType::LASER;
+            else if (selectedBuff == BuffType::SPEED) selectedBuff = BuffType::BOMB;
+            else if (selectedBuff == BuffType::NONE) selectedBuff = BuffType::SPEED;
             inputCooldown = 12;
         }
         else if (CheckHitKey(KEY_INPUT_RIGHT) == 1 || CheckHitKey(KEY_INPUT_D) == 1) {
             PlaySoundFile(L"C:\\Windows\\Media\\Windows Navigation Start.wav", DX_PLAYTYPE_BACK);
-            if (g_Buff == BuffType::NONE) g_Buff = BuffType::LASER;
-            else if (g_Buff == BuffType::LASER) g_Buff = BuffType::BOMB;
-            else if (g_Buff == BuffType::BOMB) g_Buff = BuffType::SPEED;
-            else if (g_Buff == BuffType::SPEED) g_Buff = BuffType::NONE;
+            if (selectedBuff == BuffType::NONE) selectedBuff = BuffType::LASER;
+            else if (selectedBuff == BuffType::LASER) selectedBuff = BuffType::BOMB;
+            else if (selectedBuff == BuffType::BOMB) selectedBuff = BuffType::SPEED;
+            else if (selectedBuff == BuffType::SPEED) selectedBuff = BuffType::NONE;
             inputCooldown = 12;
         }
     }
     
     if (CheckHitKey(KEY_INPUT_RETURN) == 1 || (GetMouseInput() & MOUSE_INPUT_LEFT) != 0) {
         PlaySoundFile(L"C:\\Windows\\Media\\Windows Hardware Remove.wav", DX_PLAYTYPE_BACK);
-        g_BuffLevel = 1; // Reset buff level when deploying
-        return SceneType::MAIN;
+        g_Buffs.clear();
+        if (selectedBuff != BuffType::NONE) {
+            g_Buffs[selectedBuff] = 1;
+        }
+        g_CurrentStage = 1;
+        return SceneType::MAIN; 
     }
     return SceneType::CHARACTER_SELECT;
 }
@@ -123,7 +128,9 @@ void CharacterSelectScene::Draw() {
     int boxAlpha = 100 + (int)(sin(timer * 0.2f) * 50);
     SetDrawBlendMode(DX_BLENDMODE_ALPHA, boxAlpha);
     DrawBox(leftX + 20, 240 + (int)g_Difficulty * 50, leftX + 200, 280 + (int)g_Difficulty * 50, GetColor(0, 150, 255), TRUE);
-    DrawBox(rightX + 20, 240 + (int)g_Buff * 50, rightX + 220, 280 + (int)g_Buff * 50, GetColor(0, 150, 255), TRUE);
+    
+    int buffIndex = (selectedBuff == BuffType::NONE) ? 0 : (selectedBuff == BuffType::LASER) ? 1 : (selectedBuff == BuffType::BOMB) ? 2 : 3;
+    DrawBox(rightX + 20, 240 + buffIndex * 50, rightX + 220, 280 + buffIndex * 50, GetColor(0, 150, 255), TRUE);
     SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
 
     
@@ -139,16 +146,16 @@ void CharacterSelectScene::Draw() {
 
     
     int gearColors[4] = { GetColor(100, 100, 100), GetColor(100, 100, 100), GetColor(100, 100, 100), GetColor(100, 100, 100) };
-    gearColors[(int)g_Buff] = (g_Buff == BuffType::NONE) ? GetColor(255, 255, 255) :
-                              (g_Buff == BuffType::LASER) ? GetColor(255, 0, 255) :
-                              (g_Buff == BuffType::BOMB) ? GetColor(255, 150, 0) : GetColor(0, 255, 100);
+    gearColors[buffIndex] = (selectedBuff == BuffType::NONE) ? GetColor(255, 255, 255) :
+                              (selectedBuff == BuffType::LASER) ? GetColor(255, 0, 255) :
+                              (selectedBuff == BuffType::BOMB) ? GetColor(255, 150, 0) : GetColor(0, 255, 100);
                               
     DrawStringToHandle(rightX + 40, 245, L"STANDARD", gearColors[0], subFontHandle);
     DrawStringToHandle(rightX + 40, 295, L"LASER", gearColors[1], subFontHandle);
     DrawStringToHandle(rightX + 40, 345, L"BOMB", gearColors[2], subFontHandle);
     DrawStringToHandle(rightX + 40, 395, L"SPEED", gearColors[3], subFontHandle);
     
-    DrawStringToHandle(rightX + 10, 245 + (int)g_Buff * 50, L">", gearColors[(int)g_Buff], subFontHandle);
+    DrawStringToHandle(rightX + 10, 245 + buffIndex * 50, L">", gearColors[buffIndex], subFontHandle);
 
     
     if ((timer / 30) % 2 == 0) {

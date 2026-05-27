@@ -30,7 +30,6 @@ private:
     int laserStrikeWarningTimer;
     VECTOR laserStrikePos;
     bool isSecondForm;
-    bool isFinalForm;
     
     std::vector<Bullet> bullets;
     std::vector<FireBomb> fireBombs;
@@ -48,9 +47,8 @@ public:
     int GetLaserStrikeWarningTimer() const { return laserStrikeWarningTimer; }
     VECTOR GetLaserStrikePos() const { return laserStrikePos; }
     bool IsSecondForm() const { return isSecondForm; }
-    bool IsFinalForm() const { return isFinalForm; }
-    void EnterFinalForm() {
-        isFinalForm = true;
+    void ReviveForNextStage() {
+        isSecondForm = false;
         hp = GetMaxHP(); // Restore full HP
         bullets.clear(); // Clear existing bullets
         fireBombs.clear(); // Clear existing fire bombs
@@ -58,9 +56,22 @@ public:
         laserStrikeWarningTimer = 0;
     }
     int GetMaxHP() const {
-        if (g_Difficulty == GameDifficulty::EASY) return 300;
-        if (g_Difficulty == GameDifficulty::NORMAL) return 500;
-        return 1000;
+        int baseHP = 300;
+        int hpPerStage = 200;
+        float diffMultiplier = 0.2f;
+        
+        if (g_Difficulty == GameDifficulty::NORMAL) {
+            baseHP = 500;
+            hpPerStage = 500;
+            diffMultiplier = 0.25f;
+        } else if (g_Difficulty == GameDifficulty::HARD) {
+            baseHP = 1000;
+            hpPerStage = 1000;
+            diffMultiplier = 0.35f;
+        }
+
+        float multiplier = 1.0f + (g_CurrentStage - 1) * diffMultiplier;
+        return (int)((baseHP + hpPerStage * (g_CurrentStage - 1)) * multiplier);
     }
     void Damage(int amount) { hp -= amount; }
     std::vector<Bullet>& GetBullets() { return bullets; }

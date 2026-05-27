@@ -1,4 +1,4 @@
-﻿#include "LoadingScene.h"
+#include "LoadingScene.h"
 #include "GameTypes.h"
 #include "DxLib.h"
 #include <math.h>
@@ -14,6 +14,8 @@ void LoadingScene::Initialize() {
     } else {
         bgImageHandle = LoadGraph(L"loading_bg_2.png");
     }
+    
+    PlayMusic(L"C:\\Windows\\Media\\onestop.mid", DX_PLAYTYPE_LOOP);
 }
 
 SceneType LoadingScene::Update() {
@@ -96,4 +98,5 @@ void LoadingScene::Finalize() {
     DeleteFontToHandle(fontHandle);
     DeleteFontToHandle(smallFontHandle);
     DeleteGraph(bgImageHandle);
+    StopMusic();
 }

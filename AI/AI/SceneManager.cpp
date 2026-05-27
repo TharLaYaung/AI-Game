@@ -1,4 +1,4 @@
-﻿#include "SceneManager.h"
+#include "SceneManager.h"
 #include "OpeningScene.h"
 #include "TitleScene.h"
 #include "CharacterSelectScene.h"
@@ -6,6 +6,7 @@
 #include "ResultScene.h"
 #include "GameOverScene.h"
 #include "RankingScene.h"
+#include "SettingsScene.h"
 #include "LoadingScene.h"
 #include "GameTypes.h"
 #include <math.h>
@@ -29,8 +30,12 @@ void SceneManager::Update() {
         if (nextScene != currentSceneType) {
             
             if (nextScene != SceneType::LOADING && currentSceneType != SceneType::LOADING) {
-                g_TargetScene = nextScene;
-                ChangeScene(SceneType::LOADING);
+                if (currentSceneType == SceneType::MAIN && nextScene == SceneType::RANKING) {
+                    ChangeScene(nextScene);
+                } else {
+                    g_TargetScene = nextScene;
+                    ChangeScene(SceneType::LOADING);
+                }
             } else {
                 ChangeScene(nextScene);
             }
@@ -107,6 +112,7 @@ void SceneManager::ChangeScene(SceneType nextScene) {
         case SceneType::RESULT:           currentScene = new ResultScene();           break;
         case SceneType::GAMEOVER:         currentScene = new GameOverScene();         break;
         case SceneType::RANKING:          currentScene = new RankingScene();          break;
+        case SceneType::SETTINGS:         currentScene = new SettingsScene();         break;
         case SceneType::LOADING:          currentScene = new LoadingScene();          break;
     }
 

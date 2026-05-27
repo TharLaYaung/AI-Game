@@ -1,5 +1,6 @@
 #pragma once
 #include "Scene.h"
+#include <string>
 
 class RankingScene : public BaseScene {
 private:
@@ -9,8 +10,7 @@ private:
     int inputFontHandle;
     
     bool isInputtingName;
-    char nameChars[3];
-    int charIndex;
+    int keyInputHandle;
     
     int keyWaitTimer;
 public:

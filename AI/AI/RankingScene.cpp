@@ -10,15 +10,14 @@ void RankingScene::Initialize() {
     inputFontHandle = CreateFontToHandle(L"Impact", 50, 5, DX_FONTTYPE_ANTIALIASING_EDGE);
     
     isInputtingName = false;
-    keyWaitTimer = 0;
+    keyWaitTimer = 30; // Wait before accepting input to prevent accidental skips
     
     if (g_Score > 0) {
         if (g_Ranking.size() < 5 || g_Score > g_Ranking.back().score) {
             isInputtingName = true;
-            nameChars[0] = 'A';
-            nameChars[1] = 'A';
-            nameChars[2] = 'A';
-            charIndex = 0;
+            keyInputHandle = MakeKeyInput(10, FALSE, FALSE, FALSE);
+            SetActiveKeyInput(keyInputHandle);
+            SetKeyInputStringFont(inputFontHandle);
         }
     }
     
@@ -30,38 +29,20 @@ SceneType RankingScene::Update() {
         if (keyWaitTimer > 0) keyWaitTimer--;
         
         if (keyWaitTimer == 0) {
-            if (CheckHitKey(KEY_INPUT_UP)) {
-                nameChars[charIndex]++;
-                if (nameChars[charIndex] > 'Z') nameChars[charIndex] = 'A';
-                keyWaitTimer = 10;
-                PlaySoundFile(L"C:\\Windows\\Media\\Windows Navigation Start.wav", DX_PLAYTYPE_BACK);
-            }
-            if (CheckHitKey(KEY_INPUT_DOWN)) {
-                nameChars[charIndex]--;
-                if (nameChars[charIndex] < 'A') nameChars[charIndex] = 'Z';
-                keyWaitTimer = 10;
-                PlaySoundFile(L"C:\\Windows\\Media\\Windows Navigation Start.wav", DX_PLAYTYPE_BACK);
-            }
-            if (CheckHitKey(KEY_INPUT_LEFT)) {
-                charIndex--;
-                if (charIndex < 0) charIndex = 2;
-                keyWaitTimer = 15;
-                PlaySoundFile(L"C:\\Windows\\Media\\Windows Navigation Start.wav", DX_PLAYTYPE_BACK);
-            }
-            if (CheckHitKey(KEY_INPUT_RIGHT)) {
-                charIndex++;
-                if (charIndex > 2) charIndex = 0;
-                keyWaitTimer = 15;
-                PlaySoundFile(L"C:\\Windows\\Media\\Windows Navigation Start.wav", DX_PLAYTYPE_BACK);
-            }
-            if (CheckHitKey(KEY_INPUT_RETURN)) {
-                std::string finalName = "";
-                finalName += nameChars[0];
-                finalName += nameChars[1];
-                finalName += nameChars[2];
+            if (CheckKeyInput(keyInputHandle) != 0) {
+                TCHAR nameBuf[256];
+                GetKeyInputString(nameBuf, keyInputHandle);
+                
+                int requiredSize = WideCharToMultiByte(CP_ACP, 0, nameBuf, -1, NULL, 0, NULL, NULL);
+                std::string finalName(requiredSize - 1, '\0');
+                WideCharToMultiByte(CP_ACP, 0, nameBuf, -1, &finalName[0], requiredSize, NULL, NULL);
+                
+                if (finalName.empty()) finalName = "UNKNOWN";
+                
                 SaveRanking(finalName, g_Score);
                 g_Score = 0;
                 isInputtingName = false;
+                DeleteKeyInput(keyInputHandle);
                 timer = 0; 
                 PlaySoundFile(L"C:\\Windows\\Media\\Windows Hardware Remove.wav", DX_PLAYTYPE_BACK);
                 keyWaitTimer = 30; 
@@ -97,37 +78,28 @@ void RankingScene::Draw() {
 
     if (isInputtingName) {
         DrawStringToHandle(140, 100, L"NEW RECORD ESTABLISHED", GetColor(255, 200, 0), titleFontHandle);
-        DrawStringToHandle(220, 180, L"ENTER YOUR IDENTIFICATION", GetColor(0, 255, 255), subFontHandle);
+        DrawStringToHandle(220, 180, L"TYPE YOUR IDENTIFICATION", GetColor(0, 255, 255), subFontHandle);
         
-        for (int i = 0; i < 3; i++) {
-            int bx = 280 + i * 90;
-            int by = 280;
-            
-            if (i == charIndex) {
-                int alpha = 150 + (int)(sin(GetNowCount() * 0.01f) * 105);
-                SetDrawBlendMode(DX_BLENDMODE_ALPHA, alpha);
-                DrawBox(bx - 15, by - 10, bx + 65, by + 75, GetColor(0, 255, 100), TRUE);
-                SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
-                
-                DrawBox(bx - 15, by - 10, bx + 65, by + 75, GetColor(255, 255, 255), FALSE);
-            }
-            
-            wchar_t cStr[2];
-            cStr[0] = nameChars[i];
-            cStr[1] = L'\0';
-            DrawStringToHandle(bx, by, cStr, GetColor(255, 255, 255), inputFontHandle);
-            
-            if (i == charIndex) {
-                DrawTriangle(bx + 25, by - 25, bx + 10, by - 40, bx + 40, by - 40, GetColor(0, 255, 255), TRUE);
-                DrawTriangle(bx + 25, by + 100, bx + 10, by + 115, bx + 40, by + 115, GetColor(0, 255, 255), TRUE);
-            }
-        }
+        int boxWidth = 350;
+        int bx = 400 - boxWidth / 2;
+        int by = 280;
         
-        DrawFormatStringToHandle(280, 420, GetColor(0, 255, 255), subFontHandle, L"SCORE: %06d", g_Score);
+        SetDrawBlendMode(DX_BLENDMODE_ALPHA, 100);
+        DrawBox(bx, by, bx + boxWidth, by + 75, GetColor(0, 150, 255), TRUE);
+        SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
+        DrawBox(bx, by, bx + boxWidth, by + 75, GetColor(0, 255, 255), FALSE);
+        
+        DrawKeyInputString(bx + 20, by + 10, keyInputHandle);
+        DrawKeyInputModeString(bx + 20, by + 80);
+        
+        int minutes = (g_ClearTime / 60) / 60;
+        int seconds = (g_ClearTime / 60) % 60;
+        int milliseconds = (int)(((g_ClearTime % 60) / 60.0f) * 1000.0f);
+        DrawFormatStringToHandle(280, 420, GetColor(0, 255, 255), subFontHandle, L"SCORE: %06d  TIME: %02d:%02d.%03d", g_Score, minutes, seconds, milliseconds);
         
         int pulseText = 150 + (int)(sin(GetNowCount() * 0.01f) * 105);
         SetDrawBlendMode(DX_BLENDMODE_ALPHA, pulseText);
-        DrawStringToHandle(120, 500, L"USE ARROW KEYS TO EDIT, ENTER TO SAVE", GetColor(150, 255, 150), subFontHandle);
+        DrawStringToHandle(180, 500, L"TYPE YOUR NAME, PRESS ENTER TO SAVE", GetColor(150, 255, 150), subFontHandle);
         SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
         
     } else {
@@ -178,8 +150,18 @@ void RankingScene::Draw() {
             std::string n = g_Ranking[i].name;
             std::wstring wn(n.begin(), n.end());
             
-            DrawFormatStringToHandle(180, y + 10, textColor, subFontHandle, L"RANK %d    %s", (int)i + 1, wn.c_str());
-            DrawFormatStringToHandle(400, y + 10, GetColor(0, 255, 255), subFontHandle, L"%06d PTS", g_Ranking[i].score);
+            DrawFormatStringToHandle(50, y + 10, textColor, subFontHandle, L"RANK %d", (int)i + 1);
+            DrawStringToHandle(180, y + 10, wn.c_str(), textColor, subFontHandle);
+            DrawFormatStringToHandle(410, y + 10, GetColor(0, 255, 255), subFontHandle, L"%06d PTS", g_Ranking[i].score);
+            
+            int rMins = (g_Ranking[i].clearTime / 60) / 60;
+            int rSecs = (g_Ranking[i].clearTime / 60) % 60;
+            int rMs = (int)(((g_Ranking[i].clearTime % 60) / 60.0f) * 1000.0f);
+            if (g_Ranking[i].clearTime < 99999) {
+                DrawFormatStringToHandle(620, y + 10, GetColor(255, 255, 0), subFontHandle, L"%02d:%02d.%03d", rMins, rSecs, rMs);
+            } else {
+                DrawStringToHandle(620, y + 10, L"--:--.---", GetColor(100, 100, 100), subFontHandle);
+            }
         }
         
         if (g_Ranking.empty() && timer > 30) {
@@ -196,6 +178,9 @@ void RankingScene::Draw() {
 }
 
 void RankingScene::Finalize() {
+    if (isInputtingName) {
+        DeleteKeyInput(keyInputHandle);
+    }
     DeleteFontToHandle(titleFontHandle);
     DeleteFontToHandle(subFontHandle);
     DeleteFontToHandle(inputFontHandle);

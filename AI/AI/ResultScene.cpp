@@ -46,7 +46,18 @@ void ResultScene::Draw() {
         int color = (g_Ranking[i].score == g_Score) ? GetColor(255, 100, 100) : GetColor(255, 255, 255);
         std::string n = g_Ranking[i].name;
         std::wstring wn(n.begin(), n.end());
-        DrawFormatStringToHandle(320, 320 + (int)i * 30, color, subFontHandle, L"%d. %s  %06d", (int)i + 1, wn.c_str(), g_Ranking[i].score);
+        DrawFormatStringToHandle(50, 320 + (int)i * 30, color, subFontHandle, L"RANK %d", (int)i + 1);
+        DrawStringToHandle(180, 320 + (int)i * 30, wn.c_str(), color, subFontHandle);
+        DrawFormatStringToHandle(410, 320 + (int)i * 30, color, subFontHandle, L"%06d PTS", g_Ranking[i].score);
+        
+        int rMins = (g_Ranking[i].clearTime / 60) / 60;
+        int rSecs = (g_Ranking[i].clearTime / 60) % 60;
+        int rMs = (int)(((g_Ranking[i].clearTime % 60) / 60.0f) * 1000.0f);
+        if (g_Ranking[i].clearTime < 99999) {
+            DrawFormatStringToHandle(620, 320 + (int)i * 30, color, subFontHandle, L"%02d:%02d.%03d", rMins, rSecs, rMs);
+        } else {
+            DrawStringToHandle(620, 320 + (int)i * 30, L"--:--.---", color, subFontHandle);
+        }
     }
 
     if ((timer / 30) % 2 == 0) {

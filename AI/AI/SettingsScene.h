@@ -2,15 +2,14 @@
 #include "Scene.h"
 #include "GameTypes.h"
 
-class CharacterSelectScene : public BaseScene {
+class SettingsScene : public BaseScene {
 private:
+    int fontHandle;
+    int smallFontHandle;
+    int cursorIndex;
+    int keyWaitTimer;
     int timer;
-    int mainFontHandle;
-    int subFontHandle;
-    int difficultyFontHandle;
-    int bgImageHandle;
-    BuffType selectedBuff;
-    
+    bool isWaitingForKey;
 public:
     void Initialize() override;
     SceneType Update() override;

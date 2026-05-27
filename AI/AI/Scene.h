@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 
 enum class SceneType {
@@ -9,7 +9,8 @@ enum class SceneType {
     RESULT,     
     GAMEOVER,   
     RANKING,    
-    LOADING     
+    LOADING,
+    SETTINGS
 };
 
 

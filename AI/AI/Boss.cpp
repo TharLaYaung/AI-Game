@@ -18,7 +18,6 @@ void Boss::Initialize() {
     laserStrikeWarningTimer = 0;
     laserStrikePos = VGet(0,0,0);
     isSecondForm = false;
-    isFinalForm = false;
     bullets.clear();
 }
 
@@ -55,13 +54,11 @@ void Boss::Update(VECTOR playerPos) {
         }
     } else {
         
-        int baseLaserChance = (g_Difficulty == GameDifficulty::HARD) ? 200 : (g_Difficulty == GameDifficulty::EASY) ? 600 : 400;
-        int secondLaserChance = (g_Difficulty == GameDifficulty::HARD) ? 80 : (g_Difficulty == GameDifficulty::EASY) ? 250 : 150;
-        int finalLaserChance = (g_Difficulty == GameDifficulty::HARD) ? 30 : (g_Difficulty == GameDifficulty::EASY) ? 100 : 60;
+        int baseLaserChance = (g_Difficulty == GameDifficulty::HARD) ? 100 : (g_Difficulty == GameDifficulty::EASY) ? 300 : 200;
         
-        int laserChance = baseLaserChance;
-        if (isFinalForm) laserChance = finalLaserChance; 
-        else if (isSecondForm) laserChance = secondLaserChance;
+        int laserChance = baseLaserChance - (g_CurrentStage * 10);
+        if (laserChance < 10) laserChance = 10;
+        if (isSecondForm) laserChance -= 20;
         
         if (GetRand(laserChance) == 0) {
             laserStrikeWarningTimer = (g_Difficulty == GameDifficulty::HARD) ? 30 : (g_Difficulty == GameDifficulty::EASY) ? 90 : 60; 
@@ -69,9 +66,10 @@ void Boss::Update(VECTOR playerPos) {
             PlaySoundFile(L"C:\\Windows\\Media\\Windows Default.wav", DX_PLAYTYPE_BACK);
         }
         
-        if (isSecondForm || isFinalForm) {
+        if (isSecondForm || g_CurrentStage >= 3) {
             int fbChance = (g_Difficulty == GameDifficulty::HARD) ? 150 : (g_Difficulty == GameDifficulty::EASY) ? 800 : 400;
-            if (isFinalForm) fbChance /= 2;
+            fbChance -= g_CurrentStage * 20;
+            if (fbChance < 20) fbChance = 20;
             
             if (GetRand(fbChance) == 0) {
                 int bombWarning = (g_Difficulty == GameDifficulty::HARD) ? 45 : (g_Difficulty == GameDifficulty::EASY) ? 90 : 60;
@@ -99,12 +97,11 @@ void Boss::Update(VECTOR playerPos) {
     
     stateTimer++;
     if (isSecondForm) stateTimer++; 
-    if (isFinalForm) stateTimer += 2; 
+    stateTimer += g_CurrentStage / 3;
 
     
-    float moveSpeed = 0.03f;
-    if (isFinalForm) moveSpeed = 0.15f; 
-    else if (isSecondForm) moveSpeed = 0.05f;
+    float moveSpeed = 0.03f + (g_CurrentStage * 0.01f);
+    if (isSecondForm) moveSpeed += 0.02f;
     
     pos = VAdd(pos, VScale(VSub(targetPos, pos), moveSpeed));
 
@@ -180,9 +177,8 @@ void Boss::Draw() {
     
         
         
-        int hullColor = GetColor(180, 180, 200);
-        if (isFinalForm) hullColor = GetColor(10, 10, 10); 
-        else if (isSecondForm) hullColor = GetColor(150, 20, 20);
+        int hullColor = GetColor(180 - g_CurrentStage * 10, 180 - g_CurrentStage * 15, 200 - g_CurrentStage * 5);
+        if (isSecondForm) hullColor = GetColor(150, 20, 20);
         
         VECTOR top = VAdd(pos, VGet(0, radius * 0.8f, 0));
         VECTOR bottom = VAdd(pos, VGet(0, -radius * 0.5f, 0));
@@ -190,9 +186,8 @@ void Boss::Draw() {
         
         
         float armorAngle = stateTimer * 0.05f;
-        int plateColor = GetColor(200, 200, 220);
-        if (isFinalForm) plateColor = GetColor(30, 30, 30); 
-        else if (isSecondForm) plateColor = GetColor(100, 10, 10);
+        int plateColor = GetColor(200 - g_CurrentStage * 10, 200 - g_CurrentStage * 10, 220);
+        if (isSecondForm) plateColor = GetColor(100, 10, 10);
         
         for (int i = 0; i < 4; i++) {
             float a = armorAngle + (3.14159f / 2.0f) * i;
@@ -200,12 +195,13 @@ void Boss::Draw() {
             DrawSphere3D(platePos, radius * 0.4f, 16, plateColor, GetColor(255,255,255), TRUE);
             
             VECTOR spikeEnd = VAdd(platePos, VGet(cos(a) * radius * 2.0f, 0, sin(a) * radius * 2.0f));
-            int spikeColor = isFinalForm ? GetColor(0, 255, 255) : GetColor(150, 0, 0);
+            int spikeColor = GetColor(150 + g_CurrentStage * 10, 0, g_CurrentStage * 20);
+            if (spikeColor > 255) spikeColor = 255;
             DrawCone3D(platePos, spikeEnd, radius * 0.2f, 8, spikeColor, GetColor(255, 255, 255), TRUE);
         }
         
         
-        int eyeColor = isFinalForm ? GetColor(0, 255, 255) : GetColor(255, 0, 0); 
+        int eyeColor = GetColor(255 - g_CurrentStage * 20, g_CurrentStage * 25, 0); 
         VECTOR eyePos = VAdd(pos, VGet(0, 10.0f, -radius * 0.95f));
         SetDrawBlendMode(DX_BLENDMODE_ADD, 200);
         DrawSphere3D(eyePos, radius * 0.4f, 16, eyeColor, GetColor(255, 255, 255), TRUE);

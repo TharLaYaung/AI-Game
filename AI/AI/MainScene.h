@@ -56,6 +56,8 @@ private:
     int hudFontHandle;
     int smallFontHandle;
     
+    int gameTimer;
+    
     int realmWarpTimer;
     int realmColorMode;
 

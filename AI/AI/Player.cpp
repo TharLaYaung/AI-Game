@@ -25,14 +25,16 @@ void Player::Update() {
     if (shieldBuffTimer > 0) shieldBuffTimer--;
 
     float moveSpeed = 5.0f;
-    if (g_Buff == BuffType::SPEED) moveSpeed = (g_BuffLevel == 2) ? 12.0f : 8.0f;
+    int speedLv = g_Buffs[BuffType::SPEED];
+    float speedMult = (g_Difficulty == GameDifficulty::HARD) ? 2.0f : (g_Difficulty == GameDifficulty::EASY) ? 4.0f : 3.0f;
+    if (speedLv > 0) moveSpeed += speedLv * speedMult;
 
-    if (CheckHitKey(KEY_INPUT_W) || CheckHitKey(KEY_INPUT_UP))    pos.z += moveSpeed;
-    if (CheckHitKey(KEY_INPUT_S) || CheckHitKey(KEY_INPUT_DOWN))  pos.z -= moveSpeed;
-    if (CheckHitKey(KEY_INPUT_A) || CheckHitKey(KEY_INPUT_LEFT))  pos.x -= moveSpeed;
-    if (CheckHitKey(KEY_INPUT_D) || CheckHitKey(KEY_INPUT_RIGHT)) pos.x += moveSpeed;
-    if (CheckHitKey(KEY_INPUT_Q)) pos.y += moveSpeed;
-    if (CheckHitKey(KEY_INPUT_E)) pos.y -= moveSpeed;
+    if (CheckHitKey(g_KeyMoveUp))    pos.z += moveSpeed;
+    if (CheckHitKey(g_KeyMoveDown))  pos.z -= moveSpeed;
+    if (CheckHitKey(g_KeyMoveLeft))  pos.x -= moveSpeed;
+    if (CheckHitKey(g_KeyMoveRight)) pos.x += moveSpeed;
+    if (CheckHitKey(g_KeyAltMoveUp)) pos.y += moveSpeed;
+    if (CheckHitKey(g_KeyAltMoveDown)) pos.y -= moveSpeed;
 
     if (pos.x < -600.0f) pos.x = -600.0f;
     if (pos.x > 600.0f)  pos.x = 600.0f;
@@ -42,7 +44,7 @@ void Player::Update() {
     if (pos.z > 400.0f)  pos.z = 400.0f;
 
     static bool prevShift = false;
-    bool currShift = CheckHitKey(KEY_INPUT_LSHIFT) || CheckHitKey(KEY_INPUT_RSHIFT) || (GetMouseInput() & MOUSE_INPUT_RIGHT) != 0;
+    bool currShift = CheckHitKey(g_KeyBarrier) || (GetMouseInput() & MOUSE_INPUT_RIGHT) != 0;
     if (currShift && !prevShift) {
         if (currentForm == PlayerForm::ATTACK) {
             if (barrierGauge > 20.0f) {
@@ -70,7 +72,7 @@ void Player::Update() {
     }
 
     static bool prevSpace = false;
-    bool currSpace = CheckHitKey(KEY_INPUT_SPACE) || (GetMouseInput() & MOUSE_INPUT_LEFT) != 0;
+    bool currSpace = CheckHitKey(g_KeyAttack) || (GetMouseInput() & MOUSE_INPUT_LEFT) != 0;
     
     if (laserWeaponTimer > 0) laserWeaponTimer--;
     
@@ -97,7 +99,8 @@ void Player::Update() {
     
     static int attackCooldown = 0;
     int cooldownLimit = 10;
-    if (g_Buff == BuffType::SPEED) cooldownLimit = (g_BuffLevel == 2) ? 3 : 5;
+    int cdr = (g_Difficulty == GameDifficulty::HARD) ? 2 : (g_Difficulty == GameDifficulty::EASY) ? 4 : 3;
+    if (speedLv > 0) cooldownLimit = max(2, 10 - speedLv * cdr);
     attackCooldown++;
     
     if (muzzleFlashTimer > 0) muzzleFlashTimer--;
@@ -108,8 +111,13 @@ void Player::Update() {
         Bullet b;
         b.pos = pos;
         b.dir = VGet(0, 0, 1.0f);
-        b.speed = (g_Buff == BuffType::SPEED) ? 25.0f : 15.0f;
-        b.radius = (g_Buff == BuffType::BOMB) ? 15.0f : ((g_Buff == BuffType::LASER && g_BuffLevel == 2) ? 10.0f : 5.0f);
+        float bSpeedMult = (g_Difficulty == GameDifficulty::HARD) ? 3.5f : (g_Difficulty == GameDifficulty::EASY) ? 7.0f : 5.0f;
+        b.speed = 15.0f + (speedLv * bSpeedMult);
+        
+        int bombLv = g_Buffs[BuffType::BOMB];
+        int laserLv = g_Buffs[BuffType::LASER];
+        float radiusMult = (g_Difficulty == GameDifficulty::HARD) ? 0.7f : (g_Difficulty == GameDifficulty::EASY) ? 1.5f : 1.0f;
+        b.radius = 5.0f + ((bombLv * 5.0f) + (laserLv * 2.0f)) * radiusMult;
         b.active = true;
         b.isReflected = false;
         bullets.push_back(b);
@@ -187,10 +195,20 @@ void Player::Draw() {
         SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
     }
 
-    int bulletColor = GetColor(0, 200, 255); 
-    if (g_Buff == BuffType::LASER) bulletColor = (g_BuffLevel == 2) ? GetColor(255, 150, 255) : GetColor(255, 50, 255); 
-    else if (g_Buff == BuffType::BOMB) bulletColor = (g_BuffLevel == 2) ? GetColor(255, 200, 0) : GetColor(255, 100, 0); 
-    else if (g_Buff == BuffType::SPEED) bulletColor = (g_BuffLevel == 2) ? GetColor(100, 255, 150) : GetColor(50, 255, 100); 
+    int bombLv = g_Buffs[BuffType::BOMB];
+    int laserLv = g_Buffs[BuffType::LASER];
+    int speedLv = g_Buffs[BuffType::SPEED];
+    
+    int r = 0, g = 200, b_col = 255;
+    if (bombLv > 0) { r += 200; g -= 50; b_col = 0; }
+    if (laserLv > 0) { r += 150; g -= 100; b_col += 150; }
+    if (speedLv > 0) { r -= 100; g += 150; b_col -= 100; }
+    
+    if (r < 0) r = 0; if (r > 255) r = 255;
+    if (g < 0) g = 0; if (g > 255) g = 255;
+    if (b_col < 0) b_col = 0; if (b_col > 255) b_col = 255;
+    
+    int bulletColor = GetColor(r, g, b_col);
 
     for (const auto& b : bullets) {
         if (b.active) {

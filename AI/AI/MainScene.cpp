@@ -12,6 +12,8 @@ void MainScene::Initialize() {
 
     effectManager = new EffectManager();
     effectManager->Initialize();
+    
+    gameTimer = 0;
 
     clearTimer = 0;
     realmWarpTimer = 0;
@@ -58,7 +60,7 @@ void MainScene::Initialize() {
 
 SceneType MainScene::Update() {
     static bool prevPauseKey = false;
-    bool currPauseKey = CheckHitKey(KEY_INPUT_P);
+    bool currPauseKey = CheckHitKey(g_KeyPause);
     if (currPauseKey && !prevPauseKey) {
         isPaused = !isPaused;
         PlaySoundFile(L"C:\\Windows\\Media\\Windows Ding.wav", DX_PLAYTYPE_BACK);
@@ -70,6 +72,10 @@ SceneType MainScene::Update() {
             return SceneType::TITLE;
         }
         return SceneType::MAIN;
+    }
+
+    if (currentState == MainState::PLAYING && player->GetHP() > 0 && boss->GetHP() > 0) {
+        gameTimer++;
     }
 
     if (realmWarpTimer > 0) {
@@ -102,12 +108,7 @@ SceneType MainScene::Update() {
                     }
                     if ((GetMouseInput() & MOUSE_INPUT_LEFT) != 0) {
                         BuffType selectedBuff = (midBuffIndex == 0) ? BuffType::LASER : (midBuffIndex == 1) ? BuffType::BOMB : BuffType::SPEED;
-                        if (g_Buff == selectedBuff) {
-                            if (g_BuffLevel < 2) g_BuffLevel++;
-                        } else {
-                            g_Buff = selectedBuff;
-                            g_BuffLevel = 1;
-                        }
+                        g_Buffs[selectedBuff]++;
                         currentState = MainState::PLAYING;
                         SetMouseDispFlag(FALSE);
                         PlaySoundFile(L"C:\\Windows\\Media\\Windows Hardware Remove.wav", DX_PLAYTYPE_BACK);
@@ -131,12 +132,7 @@ SceneType MainScene::Update() {
             
             if (CheckHitKey(KEY_INPUT_RETURN)) {
                 BuffType selectedBuff = (midBuffIndex == 0) ? BuffType::LASER : (midBuffIndex == 1) ? BuffType::BOMB : BuffType::SPEED;
-                if (g_Buff == selectedBuff) {
-                    if (g_BuffLevel < 2) g_BuffLevel++;
-                } else {
-                    g_Buff = selectedBuff;
-                    g_BuffLevel = 1;
-                }
+                g_Buffs[selectedBuff]++;
                 currentState = MainState::PLAYING;
                 SetMouseDispFlag(FALSE);
                 PlaySoundFile(L"C:\\Windows\\Media\\Windows Hardware Remove.wav", DX_PLAYTYPE_BACK);
@@ -147,10 +143,10 @@ SceneType MainScene::Update() {
     }
 
     if (boss->GetHP() <= 0) {
-        if (!boss->IsFinalForm()) {
-            boss->EnterFinalForm();
+        if (g_CurrentStage < 10) {
+            g_CurrentStage++;
+            boss->ReviveForNextStage();
             realmWarpTimer = 180;
-            realmColorMode = 1;
             effectManager->AddExplosion(boss->GetPos(), GetColor(0, 255, 255), 200.0f);
             PlaySoundFile(L"C:\\Windows\\Media\\Windows Hardware Remove.wav", DX_PLAYTYPE_BACK);
             PlaySoundFile(L"C:\\Windows\\Media\\Ring08.wav", DX_PLAYTYPE_LOOP); 
@@ -161,8 +157,9 @@ SceneType MainScene::Update() {
             midBuffCooldown = 30;
             return SceneType::MAIN;
         } else {
-            if (clearTimer == 0) g_Score += 10000;
-            
+            if (clearTimer == 0) {
+                g_ClearTime = gameTimer;
+            }
             
             if (clearTimer % 4 == 0) {
                 VECTOR bossPos = boss->GetPos();
@@ -177,6 +174,13 @@ SceneType MainScene::Update() {
             }
         }
     }
+    
+    // Draw Timer
+    int minutes = (gameTimer / 60) / 60;
+    int seconds = (gameTimer / 60) % 60;
+    int milliseconds = (int)(((gameTimer % 60) / 60.0f) * 1000.0f);
+    DrawFormatStringToHandle(320, 20, GetColor(0, 255, 255), hudFontHandle, L"TIME %02d:%02d.%03d", minutes, seconds, milliseconds);
+    
     if (player->GetHP() <= 0) {
         clearTimer++;
         if (clearTimer > 60) return SceneType::GAMEOVER;
@@ -224,10 +228,13 @@ SceneType MainScene::Update() {
             if (!e.active) continue;
             VECTOR diff = VSub(e.pos, b.pos);
             if (VSquareSize(diff) < 1500.0f) {
-                int dmg = (g_Buff == BuffType::BOMB) ? ((g_BuffLevel == 2) ? 40 : 20) : ((g_Buff == BuffType::LASER && g_BuffLevel == 2) ? 20 : 10);
+                float dmgMult = (g_Difficulty == GameDifficulty::HARD) ? 0.7f : (g_Difficulty == GameDifficulty::EASY) ? 1.5f : 1.0f;
+                int dmg = 10 + (int)(((g_Buffs[BuffType::BOMB] * 20) + (g_Buffs[BuffType::LASER] * 10)) * dmgMult);
                 e.hp -= dmg;
-                if (g_Buff != BuffType::LASER) b.active = false;
-                int explosionRad = (g_Buff == BuffType::BOMB) ? ((g_BuffLevel == 2) ? 60 : 30) : 10;
+                if (g_Buffs[BuffType::LASER] == 0) b.active = false;
+                
+                float radMult = (g_Difficulty == GameDifficulty::HARD) ? 0.7f : (g_Difficulty == GameDifficulty::EASY) ? 1.5f : 1.0f;
+                int explosionRad = 10 + (int)(g_Buffs[BuffType::BOMB] * 30 * radMult);
                 effectManager->AddExplosion(b.pos, GetColor(255, 255, 0), explosionRad);
                 
                 if (e.hp <= 0) {
@@ -255,11 +262,14 @@ SceneType MainScene::Update() {
 
         VECTOR diff = VSub(boss->GetPos(), b.pos);
         if (VSquareSize(diff) < (b.radius + boss->GetRadius() + 80.0f) * (b.radius + boss->GetRadius() + 80.0f)) {
-            int dmg = (g_Buff == BuffType::BOMB) ? ((g_BuffLevel == 2) ? 40 : 20) : ((g_Buff == BuffType::LASER && g_BuffLevel == 2) ? 20 : 10);
+            float dmgMult = (g_Difficulty == GameDifficulty::HARD) ? 0.7f : (g_Difficulty == GameDifficulty::EASY) ? 1.5f : 1.0f;
+            int dmg = 10 + (int)(((g_Buffs[BuffType::BOMB] * 20) + (g_Buffs[BuffType::LASER] * 10)) * dmgMult);
             boss->Damage(dmg);
             g_Score += dmg;
-            if (g_Buff != BuffType::LASER) b.active = false;
-            int explosionRad = (g_Buff == BuffType::BOMB) ? ((g_BuffLevel == 2) ? 60 : 30) : 10;
+            if (g_Buffs[BuffType::LASER] == 0) b.active = false;
+            
+            float radMult = (g_Difficulty == GameDifficulty::HARD) ? 0.7f : (g_Difficulty == GameDifficulty::EASY) ? 1.5f : 1.0f;
+            int explosionRad = 10 + (int)(g_Buffs[BuffType::BOMB] * 30 * radMult);
             effectManager->AddExplosion(b.pos, GetColor(255, 255, 0), explosionRad);
             PlaySoundFile(L"C:\\Windows\\Media\\Windows Critical Stop.wav", DX_PLAYTYPE_BACK);
         }
@@ -415,12 +425,7 @@ SceneType MainScene::Update() {
                 g_Score += 200;
                 PlaySoundFile(L"C:\\Windows\\Media\\Windows Navigation Start.wav", DX_PLAYTYPE_BACK);
             } else {
-                if (g_Buff == it.type) {
-                    if (g_BuffLevel < 2) g_BuffLevel++;
-                } else {
-                    g_Buff = it.type;
-                    g_BuffLevel = 1;
-                }
+                g_Buffs[it.type]++;
                 g_Score += 500;
                 PlaySoundFile(L"C:\\Windows\\Media\\Windows Navigation Start.wav", DX_PLAYTYPE_BACK);
             }
@@ -453,8 +458,21 @@ void MainScene::Draw() {
     int basex = ((int)pPos.x / 200) * 200;
     int basez = ((int)pPos.z / 200) * 200;
     
-    int gridColorH = (realmColorMode == 1) ? GetColor(255, 50, 50) : GetColor(0, 255, 100);
-    int gridColorV = (realmColorMode == 1) ? GetColor(200, 0, 150) : GetColor(0, 150, 255);
+    int stageColors[11] = {
+        0,
+        GetColor(0, 255, 255), // Stage 1: Cyan
+        GetColor(0, 255, 100), // Stage 2: Green
+        GetColor(255, 255, 0), // Stage 3: Yellow
+        GetColor(255, 150, 0), // Stage 4: Orange
+        GetColor(255, 50, 50), // Stage 5: Red
+        GetColor(255, 0, 255), // Stage 6: Magenta
+        GetColor(150, 0, 255), // Stage 7: Purple
+        GetColor(0, 150, 255), // Stage 8: Blue
+        GetColor(255, 255, 255), // Stage 9: White
+        GetColor(255, 0, 0)      // Stage 10: Crimson
+    };
+    int gridColorH = stageColors[g_CurrentStage % 11];
+    int gridColorV = gridColorH;
 
     int warpShakeX = (realmWarpTimer > 0) ? GetRand(20) - 10 : 0;
     int warpShakeY = (realmWarpTimer > 0) ? GetRand(20) - 10 : 0;
@@ -624,13 +642,15 @@ void MainScene::Draw() {
         DrawStringToHandle(brX + 10, brY + 15, L"MODE: [BARRIER]", GetColor(100, 200, 255), hudFontHandle);
     }
     
-    const wchar_t* buffName = L"NONE";
-    if (g_Buff == BuffType::LASER) buffName = (g_BuffLevel == 2) ? L"PIERCING LASER [LV 2]" : L"PIERCING LASER";
-    else if (g_Buff == BuffType::BOMB) buffName = (g_BuffLevel == 2) ? L"EXPLOSIVE ROUNDS [LV 2]" : L"EXPLOSIVE ROUNDS";
-    else if (g_Buff == BuffType::SPEED) buffName = (g_BuffLevel == 2) ? L"SPEED BOOST [LV 2]" : L"SPEED BOOST";
+    DrawStringToHandle(brX + 10, brY + 40, L"BUFFS:", GetColor(255, 200, 0), smallFontHandle);
     
-    DrawStringToHandle(brX + 10, brY + 50, L"BUFF:", GetColor(255, 200, 0), smallFontHandle);
-    DrawStringToHandle(brX + 70, brY + 50, buffName, GetColor(255, 255, 255), smallFontHandle);
+    std::wstring buffStr = L"";
+    if (g_Buffs[BuffType::LASER] > 0) buffStr += L"LSR[" + std::to_wstring(g_Buffs[BuffType::LASER]) + L"] ";
+    if (g_Buffs[BuffType::BOMB] > 0) buffStr += L"BMB[" + std::to_wstring(g_Buffs[BuffType::BOMB]) + L"] ";
+    if (g_Buffs[BuffType::SPEED] > 0) buffStr += L"SPD[" + std::to_wstring(g_Buffs[BuffType::SPEED]) + L"]";
+    if (buffStr.empty()) buffStr = L"NONE";
+    
+    DrawStringToHandle(brX + 60, brY + 40, buffStr.c_str(), GetColor(255, 255, 255), smallFontHandle);
 
     
     int warn = boss->GetLaserStrikeWarningTimer();
@@ -735,7 +755,7 @@ void MainScene::Draw() {
         DeleteFontToHandle(headerFont);
     }
     
-    if (boss->GetHP() <= 0 && boss->IsFinalForm() && clearTimer > 0) {
+    if (boss->GetHP() <= 0 && g_CurrentStage >= 10 && clearTimer > 0) {
         int alpha = (clearTimer * 255) / 180;
         if (alpha > 255) alpha = 255;
         SetDrawBlendMode(DX_BLENDMODE_ALPHA, alpha);
