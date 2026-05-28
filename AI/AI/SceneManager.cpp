@@ -1,4 +1,5 @@
 #include "SceneManager.h"
+#include "SceneManager.h"
 #include "OpeningScene.h"
 #include "TitleScene.h"
 #include "CharacterSelectScene.h"
@@ -8,6 +9,7 @@
 #include "RankingScene.h"
 #include "SettingsScene.h"
 #include "LoadingScene.h"
+#include "TutorialScene.h"
 #include "GameTypes.h"
 #include <math.h>
 
@@ -114,6 +116,7 @@ void SceneManager::ChangeScene(SceneType nextScene) {
         case SceneType::RANKING:          currentScene = new RankingScene();          break;
         case SceneType::SETTINGS:         currentScene = new SettingsScene();         break;
         case SceneType::LOADING:          currentScene = new LoadingScene();          break;
+        case SceneType::TUTORIAL:         currentScene = new TutorialScene();         break;
     }
 
     

@@ -143,6 +143,7 @@
     <ClCompile Include="CharacterSelectScene.cpp" />
     <ClCompile Include="LoadingScene.cpp" />
     <ClCompile Include="SettingsScene.cpp" />
+    <ClCompile Include="TutorialScene.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="GameOverScene.h" />
@@ -160,6 +161,7 @@
     <ClInclude Include="CharacterSelectScene.h" />
     <ClInclude Include="LoadingScene.h" />
     <ClInclude Include="SettingsScene.h" />
+    <ClInclude Include="TutorialScene.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

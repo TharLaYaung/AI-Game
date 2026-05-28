@@ -87,7 +87,7 @@ SceneType CharacterSelectScene::Update() {
             g_Buffs[selectedBuff] = 1;
         }
         g_CurrentStage = 1;
-        return SceneType::MAIN; 
+        return SceneType::TUTORIAL; 
     }
     return SceneType::CHARACTER_SELECT;
 }
