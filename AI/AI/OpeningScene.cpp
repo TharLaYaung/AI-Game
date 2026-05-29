@@ -1,4 +1,4 @@
-#include "OpeningScene.h"
+﻿#include "OpeningScene.h"
 #include "DxLib.h"
 #include <math.h>
 
@@ -7,13 +7,13 @@ void OpeningScene::Initialize() {
     titleFontHandle = CreateFontToHandle(L"Arial Black", 60, 7, DX_FONTTYPE_ANTIALIASING_EDGE);
     cyberFontHandle = CreateFontToHandle(L"Arial Black", 60, 2, DX_FONTTYPE_ANTIALIASING_EDGE);
     smallFontHandle = CreateFontToHandle(L"Arial Black", 24, 3, DX_FONTTYPE_ANTIALIASING_EDGE);
-    bgImageHandle = LoadGraph(L"bg_cyberpunk.png");
+    bgImageHandle = LoadGraph(L"Resources\\img\\bg_cyberpunk.png");
     
     
-    PlaySoundFile(L"C:\\Windows\\Media\\Windows Logon.wav", DX_PLAYTYPE_BACK);
+    PlaySoundFile(L"Resources\\SE\\Windows Logon.wav", DX_PLAYTYPE_BACK);
     
     
-    PlayMusic(L"C:\\Windows\\Media\\onestop.mid", DX_PLAYTYPE_LOOP);
+    PlayMusic(L"Resources\\BGM\\Drifting_At_The_Edge.mp3", DX_PLAYTYPE_LOOP);
 }
 
 SceneType OpeningScene::Update() {
@@ -21,7 +21,7 @@ SceneType OpeningScene::Update() {
     
     
     if (timer > 300 || CheckHitKey(KEY_INPUT_RETURN) == 1 || CheckHitKey(KEY_INPUT_SPACE) == 1 || (GetMouseInput() & MOUSE_INPUT_LEFT) != 0) {
-        PlaySoundFile(L"C:\\Windows\\Media\\Windows Hardware Remove.wav", DX_PLAYTYPE_BACK);
+        PlaySoundFile(L"Resources\\SE\\Windows Hardware Remove.wav", DX_PLAYTYPE_BACK);
         return SceneType::TITLE; 
     }
     
@@ -87,7 +87,7 @@ void OpeningScene::Draw() {
 
     
     if (timer > 180) {
-        int blink = (int)(sin(timer * 0.1f) * 127) + 128;
+        int blink = (int)(sinf(timer * 0.1f) * 127) + 128;
         SetDrawBlendMode(DX_BLENDMODE_ALPHA, blink);
         DrawStringToHandle(250, 450, L"PRESS ANY KEY TO START", GetColor(0, 255, 255), smallFontHandle);
         SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);

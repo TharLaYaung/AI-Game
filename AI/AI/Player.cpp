@@ -1,4 +1,4 @@
-#include "Player.h"
+﻿#include "Player.h"
 #include "GameTypes.h"
 #include "DxLib.h"
 
@@ -24,11 +24,13 @@ void Player::Initialize() {
 void Player::Update() {
     if (shieldBuffTimer > 0) shieldBuffTimer--;
 
+    // バフ状況と難易度に基づく移動速度の動的スケーリング
     float moveSpeed = 5.0f;
     int speedLv = g_Buffs[BuffType::SPEED];
     float speedMult = (g_Difficulty == GameDifficulty::HARD) ? 2.0f : (g_Difficulty == GameDifficulty::EASY) ? 4.0f : 3.0f;
     if (speedLv > 0) moveSpeed += speedLv * speedMult;
 
+    // キーボードとマウスの双方に対応するためDxLibのキー入力を直接ポーリング
     if (CheckHitKey(g_KeyMoveUp))    pos.z += moveSpeed;
     if (CheckHitKey(g_KeyMoveDown))  pos.z -= moveSpeed;
     if (CheckHitKey(g_KeyMoveLeft))  pos.x -= moveSpeed;
@@ -36,6 +38,7 @@ void Player::Update() {
     if (CheckHitKey(g_KeyAltMoveUp)) pos.y += moveSpeed;
     if (CheckHitKey(g_KeyAltMoveDown)) pos.y -= moveSpeed;
 
+    // カメラの描画範囲（クリッピング領域）を超えないためのハードコード制約
     if (pos.x < -600.0f) pos.x = -600.0f;
     if (pos.x > 600.0f)  pos.x = 600.0f;
     if (pos.y < -200.0f) pos.y = -200.0f;
@@ -43,17 +46,19 @@ void Player::Update() {
     if (pos.z < -400.0f) pos.z = -400.0f;
     if (pos.z > 400.0f)  pos.z = 400.0f;
 
+    // 形態変化の連続入力（チャタリング）および意図しない暴発を防ぐためのエッジトリガ処理
     static bool prevShift = false;
     bool currShift = CheckHitKey(g_KeyBarrier) || (GetMouseInput() & MOUSE_INPUT_RIGHT) != 0;
     if (currShift && !prevShift) {
         if (currentForm == PlayerForm::ATTACK) {
+            // 一瞬でバリアが解除されないよう、最低限のゲージ要求値を設ける
             if (barrierGauge > 20.0f) {
                 currentForm = PlayerForm::BARRIER;
-                PlaySoundFile(L"C:\\Windows\\Media\\Windows Hardware Insert.wav", DX_PLAYTYPE_BACK);
+                PlaySoundFile(L"Resources\\SE\\chord.wav", DX_PLAYTYPE_BACK);
             }
         } else {
             currentForm = PlayerForm::ATTACK;
-            PlaySoundFile(L"C:\\Windows\\Media\\Windows Hardware Remove.wav", DX_PLAYTYPE_BACK);
+            PlaySoundFile(L"Resources\\SE\\chimes.wav", DX_PLAYTYPE_BACK);
         }
     }
     prevShift = currShift;
@@ -64,7 +69,7 @@ void Player::Update() {
         if (barrierGauge <= 0.0f) {
             barrierGauge = 0.0f;
             currentForm = PlayerForm::ATTACK;
-            PlaySoundFile(L"C:\\Windows\\Media\\Windows Hardware Remove.wav", DX_PLAYTYPE_BACK);
+            PlaySoundFile(L"Resources\\SE\\chimes.wav", DX_PLAYTYPE_BACK);
         }
     } else {
         barrierGauge += 0.2f;
@@ -79,17 +84,18 @@ void Player::Update() {
     isFiringLaser = false;
     if (overheatTimer > 0) {
         overheatTimer--;
-        laserHeat -= 100.0f / 180.0f; // Cool down over 3 seconds
+        laserHeat -= 100.0f / 180.0f; // ペナルティ中は緩やかに冷却（約3秒で全回復）
         if (laserHeat < 0.0f) laserHeat = 0.0f;
     } else {
         if (laserWeaponTimer > 0 && currSpace && currentForm == PlayerForm::ATTACK) {
             isFiringLaser = true;
-            laserHeat += 100.0f / 120.0f; // Overheats in 2 seconds
+            // レーザー兵器の無限射撃によるゲーム崩壊を防ぐため、約2秒で強制オーバーヒートさせる
+            laserHeat += 100.0f / 120.0f; 
             if (laserHeat >= 100.0f) {
                 laserHeat = 100.0f;
-                overheatTimer = 180; // 3 seconds penalty
+                overheatTimer = 180; 
                 isFiringLaser = false;
-                PlaySoundFile(L"C:\\Windows\\Media\\Windows Hardware Fail.wav", DX_PLAYTYPE_BACK);
+                PlaySoundFile(L"Resources\\SE\\Windows Hardware Fail.wav", DX_PLAYTYPE_BACK);
             }
         } else {
             laserHeat -= 100.0f / 60.0f; // Fast cool down (1 sec)
@@ -111,6 +117,7 @@ void Player::Update() {
         Bullet b;
         b.pos = pos;
         b.dir = VGet(0, 0, 1.0f);
+        // 難易度とバフに応じた弾速スケーリングによる爽快感の担保
         float bSpeedMult = (g_Difficulty == GameDifficulty::HARD) ? 3.5f : (g_Difficulty == GameDifficulty::EASY) ? 7.0f : 5.0f;
         b.speed = 15.0f + (speedLv * bSpeedMult);
         
@@ -121,7 +128,7 @@ void Player::Update() {
         b.active = true;
         b.isReflected = false;
         bullets.push_back(b);
-        PlaySoundFile(L"C:\\Windows\\Media\\Windows Ding.wav", DX_PLAYTYPE_BACK);
+        PlaySoundFile(L"Resources\\SE\\Windows Ding.wav", DX_PLAYTYPE_BACK);
     }
     prevSpace = currSpace;
 
@@ -171,8 +178,8 @@ void Player::Draw() {
     }
 
     if (shieldBuffTimer > 0) {
-        
-        int glow = 150 + (int)(sin(GetNowCount() * 0.01f) * 100);
+        // DxLibのZバッファ制約による半透明オブジェクトの描画不具合を避けるため、加算合成を利用
+        int glow = 150 + (int)(sinf(GetNowCount() * 0.01f) * 100);
         SetDrawBlendMode(DX_BLENDMODE_ADD, glow);
         DrawSphere3D(pos, radius * 3.0f, 16, GetColor(0, 150, 255), GetColor(255, 255, 255), FALSE); 
         SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);

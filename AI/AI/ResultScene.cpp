@@ -1,4 +1,4 @@
-#include "ResultScene.h"
+﻿#include "ResultScene.h"
 #include "GameTypes.h"
 #include "DxLib.h"
 #include <math.h>
@@ -7,17 +7,18 @@ void ResultScene::Initialize() {
     timer = 0;
     mainFontHandle = CreateFontToHandle(L"Arial Black", 50, 5, DX_FONTTYPE_ANTIALIASING_EDGE);
     subFontHandle = CreateFontToHandle(L"Arial Black", 24, 3, DX_FONTTYPE_ANTIALIASING_EDGE);
-    bgImageHandle = LoadGraph(L"bg_cyberpunk.png");
+    bgImageHandle = LoadGraph(L"Resources\\img\\bg_cyberpunk.png");
     
-    PlayMusic(L"C:\\Windows\\Media\\flourish.mid", DX_PLAYTYPE_LOOP);
+    PlayMusic(L"Resources\\BGM\\After_the_Ascent.mp3", DX_PLAYTYPE_LOOP);
 }
 
 SceneType ResultScene::Update() {
     timer++;
+    // シーン遷移直後に連打でスキップされてしまうのを防ぐための強制ウェイト
     if (timer < 30) return SceneType::RESULT; 
     
     if (CheckHitKey(KEY_INPUT_RETURN) == 1 || (GetMouseInput() & MOUSE_INPUT_LEFT) != 0) {
-        PlaySoundFile(L"C:\\Windows\\Media\\Windows Hardware Remove.wav", DX_PLAYTYPE_BACK);
+        PlaySoundFile(L"Resources\\SE\\Windows Hardware Remove.wav", DX_PLAYTYPE_BACK);
         return SceneType::RANKING;
     }
     return SceneType::RESULT;
@@ -32,7 +33,7 @@ void ResultScene::Draw() {
     DrawBox(80, 120, 720, 480, GetColor(0, 255, 0), FALSE);
     SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
 
-    int yOffset = (int)(sin(timer * 0.05f) * 10);
+    int yOffset = (int)(sinf(timer * 0.05f) * 10);
     
     SetDrawBlendMode(DX_BLENDMODE_ALPHA, 128);
     DrawStringToHandle(165, 145 + yOffset, L"SYSTEM CLEARED", GetColor(0, 0, 255), mainFontHandle);

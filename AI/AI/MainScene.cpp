@@ -1,9 +1,10 @@
-#include "MainScene.h"
+﻿#include "MainScene.h"
 #include "GameTypes.h"
 #include "DxLib.h"
 #include <cmath>
 
 void MainScene::Initialize() {
+    // 依存するサブシステムの初期化。動的確保したメモリはFinalizeで確実に破棄する設計
     player = new Player();
     player->Initialize();
 
@@ -23,9 +24,9 @@ void MainScene::Initialize() {
     midBuffCooldown = 0;
     buffSelectTimer = 0;
     
-    cardLaserImg = LoadGraph(L"img\\card_laser.png");
-    cardBombImg = LoadGraph(L"img\\card_bomb.png");
-    cardSpeedImg = LoadGraph(L"img\\card_speed.png");
+    cardLaserImg = LoadGraph(L"Resources\\img\\card_laser.png");
+    cardBombImg = LoadGraph(L"Resources\\img\\card_bomb.png");
+    cardSpeedImg = LoadGraph(L"Resources\\img\\card_speed.png");
     
     camPos = VGet(0, 300, -500);
 
@@ -55,15 +56,16 @@ void MainScene::Initialize() {
     
     SetMouseDispFlag(FALSE);
     
-    PlayMusic(L"C:\\Windows\\Media\\town.mid", DX_PLAYTYPE_LOOP);
+    PlayMusic(L"Resources\\BGM\\Nebula_Frontline.mp3", DX_PLAYTYPE_LOOP);
 }
 
 SceneType MainScene::Update() {
+    // Escキーの長押しによるチャタリング（連続判定）を防ぎ、トグル動作を確実にするためのエッジトリガ
     static bool prevPauseKey = false;
     bool currPauseKey = CheckHitKey(g_KeyPause);
     if (currPauseKey && !prevPauseKey) {
         isPaused = !isPaused;
-        PlaySoundFile(L"C:\\Windows\\Media\\Windows Ding.wav", DX_PLAYTYPE_BACK);
+        PlaySoundFile(L"Resources\\SE\\Windows Ding.wav", DX_PLAYTYPE_BACK);
     }
     prevPauseKey = currPauseKey;
 
@@ -80,8 +82,10 @@ SceneType MainScene::Update() {
 
     if (realmWarpTimer > 0) {
         realmWarpTimer--;
+        // ボス撃破時の「超高速移動（ワープ）」を疑似的に表現するため、背景星のZ軸速度を極端に上げる
         for (auto& s : stars) {
             s.pos.z -= s.speed * 20.0f;
+            // 視界後方へ通り過ぎた星は、再利用のため奥側へ巻き戻す（オブジェクトプールの考え方）
             if (s.pos.z < -1000.0f) {
                 s.pos.z = 3000.0f;
                 s.pos.x = (float)(GetRand(4000) - 2000);
@@ -104,14 +108,14 @@ SceneType MainScene::Update() {
                 if (mouseX >= bx && mouseX <= bx + 150 && mouseY >= by && mouseY <= by + 200) {
                     if (midBuffIndex != i) {
                         midBuffIndex = i;
-                        PlaySoundFile(L"C:\\Windows\\Media\\Windows Navigation Start.wav", DX_PLAYTYPE_BACK);
+                        PlaySoundFile(L"Resources\\SE\\Windows Navigation Start.wav", DX_PLAYTYPE_BACK);
                     }
                     if ((GetMouseInput() & MOUSE_INPUT_LEFT) != 0) {
                         BuffType selectedBuff = (midBuffIndex == 0) ? BuffType::LASER : (midBuffIndex == 1) ? BuffType::BOMB : BuffType::SPEED;
                         g_Buffs[selectedBuff]++;
                         currentState = MainState::PLAYING;
                         SetMouseDispFlag(FALSE);
-                        PlaySoundFile(L"C:\\Windows\\Media\\Windows Hardware Remove.wav", DX_PLAYTYPE_BACK);
+                        PlaySoundFile(L"Resources\\SE\\Windows Hardware Remove.wav", DX_PLAYTYPE_BACK);
                         midBuffCooldown = 30;
                     }
                 }
@@ -121,13 +125,13 @@ SceneType MainScene::Update() {
                 midBuffIndex--;
                 if (midBuffIndex < 0) midBuffIndex = 2;
                 midBuffCooldown = 15;
-                PlaySoundFile(L"C:\\Windows\\Media\\Windows Navigation Start.wav", DX_PLAYTYPE_BACK);
+                PlaySoundFile(L"Resources\\SE\\Windows Navigation Start.wav", DX_PLAYTYPE_BACK);
             }
             else if (CheckHitKey(KEY_INPUT_RIGHT) || CheckHitKey(KEY_INPUT_D)) {
                 midBuffIndex++;
                 if (midBuffIndex > 2) midBuffIndex = 0;
                 midBuffCooldown = 15;
-                PlaySoundFile(L"C:\\Windows\\Media\\Windows Navigation Start.wav", DX_PLAYTYPE_BACK);
+                PlaySoundFile(L"Resources\\SE\\Windows Navigation Start.wav", DX_PLAYTYPE_BACK);
             }
             
             if (CheckHitKey(KEY_INPUT_RETURN)) {
@@ -135,7 +139,7 @@ SceneType MainScene::Update() {
                 g_Buffs[selectedBuff]++;
                 currentState = MainState::PLAYING;
                 SetMouseDispFlag(FALSE);
-                PlaySoundFile(L"C:\\Windows\\Media\\Windows Hardware Remove.wav", DX_PLAYTYPE_BACK);
+                PlaySoundFile(L"Resources\\SE\\Windows Hardware Remove.wav", DX_PLAYTYPE_BACK);
                 midBuffCooldown = 30;
             }
         }
@@ -147,9 +151,15 @@ SceneType MainScene::Update() {
             g_CurrentStage++;
             boss->ReviveForNextStage();
             realmWarpTimer = 180;
-            effectManager->AddExplosion(boss->GetPos(), GetColor(0, 255, 255), 200.0f);
-            PlaySoundFile(L"C:\\Windows\\Media\\Windows Hardware Remove.wav", DX_PLAYTYPE_BACK);
-            PlaySoundFile(L"C:\\Windows\\Media\\Ring08.wav", DX_PLAYTYPE_LOOP); 
+            effectManager->AddExplosion(boss->GetPos(), GetColor(0, 255, 255), 200);
+            PlaySoundFile(L"Resources\\SE\\Windows Hardware Remove.wav", DX_PLAYTYPE_BACK);
+            if (g_CurrentStage == 3) {
+                PlayMusic(L"Resources\\BGM\\Horizon_Of_The_Flagship.mp3", DX_PLAYTYPE_LOOP);
+            } else if (g_CurrentStage == 5) {
+                PlayMusic(L"Resources\\BGM\\Hull_Breach_Imminent.mp3", DX_PLAYTYPE_LOOP);
+            } else if (g_CurrentStage == 8) {
+                PlayMusic(L"Resources\\BGM\\Terminal_Orbit.mp3", DX_PLAYTYPE_LOOP);
+            } 
             
             currentState = MainState::MID_BUFF_SELECT;
             SetMouseDispFlag(TRUE);
@@ -164,8 +174,8 @@ SceneType MainScene::Update() {
             if (clearTimer % 4 == 0) {
                 VECTOR bossPos = boss->GetPos();
                 VECTOR offset = VGet((float)(GetRand(300) - 150), (float)(GetRand(300) - 150), (float)(GetRand(300) - 150));
-                effectManager->AddExplosion(VAdd(bossPos, offset), GetColor(255, 150 + GetRand(105), 0), 40.0f + GetRand(60));
-                PlaySoundFile(L"C:\\Windows\\Media\\Windows Critical Stop.wav", DX_PLAYTYPE_BACK);
+                effectManager->AddExplosion(VAdd(bossPos, offset), GetColor(255, 150 + GetRand(105), 0), 40 + GetRand(60));
+                PlaySoundFile(L"Resources\\SE\\Windows Critical Stop.wav", DX_PLAYTYPE_BACK);
             }
             
             clearTimer++;
@@ -179,13 +189,14 @@ SceneType MainScene::Update() {
     int minutes = (gameTimer / 60) / 60;
     int seconds = (gameTimer / 60) % 60;
     int milliseconds = (int)(((gameTimer % 60) / 60.0f) * 1000.0f);
-    DrawFormatStringToHandle(320, 20, GetColor(0, 255, 255), hudFontHandle, L"TIME %02d:%02d.%03d", minutes, seconds, milliseconds);
+    DrawFormatStringToHandle(550, 15, GetColor(0, 255, 255), hudFontHandle, L"TIME %02d:%02d.%03d", minutes, seconds, milliseconds);
     
     if (player->GetHP() <= 0) {
         clearTimer++;
         if (clearTimer > 60) return SceneType::GAMEOVER;
     }
 
+    // プレイヤーの移動に対してカメラを遅延追従（Lerp）させ、ダイナミックな視点移動を演出
     VECTOR pPos = player->GetPos();
     VECTOR targetCamPos = VGet(pPos.x, pPos.y + 300.0f, pPos.z - 500.0f);
     camPos = VAdd(camPos, VScale(VSub(targetCamPos, camPos), 0.1f)); 
@@ -195,6 +206,7 @@ SceneType MainScene::Update() {
     boss->Update(player->GetPos());
     effectManager->Update();
     
+    // レーザーはフレーム毎の連続ヒット判定となるため、バランスを考慮し小ダメージを累積させる仕様
     if (player->IsFiringLaser()) {
         VECTOR pp = player->GetPos();
         VECTOR bp = boss->GetPos();
@@ -241,7 +253,7 @@ SceneType MainScene::Update() {
                     e.active = false;
                     g_Score += 100;
                     effectManager->AddExplosion(e.pos, GetColor(255, 100, 0), 40);
-                    PlaySoundFile(L"C:\\Windows\\Media\\Windows Critical Stop.wav", DX_PLAYTYPE_BACK);
+                    PlaySoundFile(L"Resources\\SE\\Windows Critical Stop.wav", DX_PLAYTYPE_BACK);
                     
                     if (GetRand(100) < 40) {
                         Item it;
@@ -271,12 +283,13 @@ SceneType MainScene::Update() {
             float radMult = (g_Difficulty == GameDifficulty::HARD) ? 0.7f : (g_Difficulty == GameDifficulty::EASY) ? 1.5f : 1.0f;
             int explosionRad = 10 + (int)(g_Buffs[BuffType::BOMB] * 30 * radMult);
             effectManager->AddExplosion(b.pos, GetColor(255, 255, 0), explosionRad);
-            PlaySoundFile(L"C:\\Windows\\Media\\Windows Critical Stop.wav", DX_PLAYTYPE_BACK);
+            PlaySoundFile(L"Resources\\SE\\Windows Critical Stop.wav", DX_PLAYTYPE_BACK);
         }
     }
 
     for (auto& b : boss->GetBullets()) {
         if (!b.active) continue;
+        // 平方根(sqrt)の計算コストを削減するため、距離の2乗同士で当たり判定を行う
         VECTOR diff = VSub(b.pos, player->GetPos());
         if (VSquareSize(diff) < (b.radius + player->GetRadius()) * (b.radius + player->GetRadius())) {
             if (player->GetForm() == PlayerForm::BARRIER) {
@@ -287,15 +300,15 @@ SceneType MainScene::Update() {
                     b.speed *= 2.0f;
                     b.pos = VAdd(b.pos, VScale(b.dir, b.speed));
                     effectManager->AddExplosion(b.pos, GetColor(0, 255, 255), 15);
-                    PlaySoundFile(L"C:\\Windows\\Media\\Windows Hardware Remove.wav", DX_PLAYTYPE_BACK);
+                    PlaySoundFile(L"Resources\\SE\\Windows Hardware Remove.wav", DX_PLAYTYPE_BACK);
                 } else {
-                    
+            // バリアゲージ不足時の強制ペナルティ。防ぎきれずにダメージを受け、バリアも解除される
                     player->ForceAttackForm();
                     player->ConsumeBarrier(100.0f);
                     player->Damage(20);
                     b.active = false;
                     effectManager->AddExplosion(player->GetPos(), GetColor(255, 0, 0), 20);
-                    PlaySoundFile(L"C:\\Windows\\Media\\Windows Critical Stop.wav", DX_PLAYTYPE_BACK);
+                    PlaySoundFile(L"Resources\\SE\\Windows Critical Stop.wav", DX_PLAYTYPE_BACK);
                     
                     camPos = VGet(pPos.x + GetRand(40)-20, pPos.y + 300.0f + GetRand(40)-20, pPos.z - 500.0f);
                     SetCameraPositionAndTarget_UpVecY(camPos, pPos);
@@ -304,7 +317,7 @@ SceneType MainScene::Update() {
                   player->Damage(20);
                   b.active = false;
                   effectManager->AddExplosion(player->GetPos(), GetColor(255, 0, 0), 20);
-                  PlaySoundFile(L"C:\\Windows\\Media\\Windows Critical Stop.wav", DX_PLAYTYPE_BACK);
+                  PlaySoundFile(L"Resources\\SE\\Windows Critical Stop.wav", DX_PLAYTYPE_BACK);
                   
                   camPos = VGet(pPos.x + GetRand(40)-20, pPos.y + 300.0f + GetRand(40)-20, pPos.z - 500.0f);
                   SetCameraPositionAndTarget_UpVecY(camPos, pPos);
@@ -318,7 +331,7 @@ SceneType MainScene::Update() {
                 g_Score += 50;
                 b.active = false;
                 effectManager->AddExplosion(b.pos, GetColor(0, 255, 255), 30);
-                PlaySoundFile(L"C:\\Windows\\Media\\Windows Critical Stop.wav", DX_PLAYTYPE_BACK);
+                PlaySoundFile(L"Resources\\SE\\Windows Critical Stop.wav", DX_PLAYTYPE_BACK);
             }
         }
     }
@@ -415,19 +428,19 @@ SceneType MainScene::Update() {
             if (it.type == BuffType::HEAL) {
                 player->Damage(-30); 
                 g_Score += 200;
-                PlaySoundFile(L"C:\\Windows\\Media\\Windows Navigation Start.wav", DX_PLAYTYPE_BACK);
+                PlaySoundFile(L"Resources\\SE\\Windows Navigation Start.wav", DX_PLAYTYPE_BACK);
             } else if (it.type == BuffType::SHIELD) {
                 player->AddShield(600); 
                 g_Score += 200;
-                PlaySoundFile(L"C:\\Windows\\Media\\Windows Navigation Start.wav", DX_PLAYTYPE_BACK);
+                PlaySoundFile(L"Resources\\SE\\Windows Navigation Start.wav", DX_PLAYTYPE_BACK);
             } else if (it.type == BuffType::LASER_WEAPON) {
                 player->AddLaserWeapon(900); // 15 seconds
                 g_Score += 200;
-                PlaySoundFile(L"C:\\Windows\\Media\\Windows Navigation Start.wav", DX_PLAYTYPE_BACK);
+                PlaySoundFile(L"Resources\\SE\\Windows Navigation Start.wav", DX_PLAYTYPE_BACK);
             } else {
                 g_Buffs[it.type]++;
                 g_Score += 500;
-                PlaySoundFile(L"C:\\Windows\\Media\\Windows Navigation Start.wav", DX_PLAYTYPE_BACK);
+                PlaySoundFile(L"Resources\\SE\\Windows Navigation Start.wav", DX_PLAYTYPE_BACK);
             }
             it.active = false;
         }
@@ -458,35 +471,17 @@ void MainScene::Draw() {
     int basex = ((int)pPos.x / 200) * 200;
     int basez = ((int)pPos.z / 200) * 200;
     
-    int stageColors[11] = {
-        0,
-        GetColor(0, 255, 255), // Stage 1: Cyan
-        GetColor(0, 255, 100), // Stage 2: Green
-        GetColor(255, 255, 0), // Stage 3: Yellow
-        GetColor(255, 150, 0), // Stage 4: Orange
-        GetColor(255, 50, 50), // Stage 5: Red
-        GetColor(255, 0, 255), // Stage 6: Magenta
-        GetColor(150, 0, 255), // Stage 7: Purple
-        GetColor(0, 150, 255), // Stage 8: Blue
-        GetColor(255, 255, 255), // Stage 9: White
-        GetColor(255, 0, 0)      // Stage 10: Crimson
-    };
-    int gridColorH = stageColors[g_CurrentStage % 11];
-    int gridColorV = gridColorH;
+    SRand(g_CurrentStage * 12345);
+    unsigned int gridColorH = GetColor(GetRand(155) + 100, GetRand(155) + 100, GetRand(155) + 100);
+    unsigned int gridColorV = gridColorH;
+    
+    SRand(GetNowCount()); // reset seed to time for other random logic
 
     int warpShakeX = (realmWarpTimer > 0) ? GetRand(20) - 10 : 0;
     int warpShakeY = (realmWarpTimer > 0) ? GetRand(20) - 10 : 0;
     int warpShakeZ = (realmWarpTimer > 0) ? GetRand(20) - 10 : 0;
 
     SetDrawBlendMode(DX_BLENDMODE_ALPHA, 80);
-    for (int i = -1600; i <= 1600; i += 200) {
-        
-        DrawLine3D(VGet(basex + (float)i + warpShakeX, -300.0f + warpShakeY, basez - 1600.0f + warpShakeZ), VGet(basex + (float)i + warpShakeX, -300.0f + warpShakeY, basez + 1600.0f + warpShakeZ), gridColorH);
-        DrawLine3D(VGet(basex - 1600.0f + warpShakeX, -300.0f + warpShakeY, basez + (float)i + warpShakeZ), VGet(basex + 1600.0f + warpShakeX, -300.0f + warpShakeY, basez + (float)i + warpShakeZ), gridColorH);
-        
-        DrawLine3D(VGet(basex + (float)i + warpShakeX, 700.0f + warpShakeY, basez - 1600.0f + warpShakeZ), VGet(basex + (float)i + warpShakeX, 700.0f + warpShakeY, basez + 1600.0f + warpShakeZ), gridColorV);
-        DrawLine3D(VGet(basex - 1600.0f + warpShakeX, 700.0f + warpShakeY, basez + (float)i + warpShakeZ), VGet(basex + 1600.0f + warpShakeX, 700.0f + warpShakeY, basez + (float)i + warpShakeZ), gridColorV);
-    }
     SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
 
     player->Draw();
@@ -507,7 +502,7 @@ void MainScene::Draw() {
         if (!it.active) continue;
         
         if (it.type == BuffType::HEAL) {
-            SetDrawBlendMode(DX_BLENDMODE_ADD, 150 + (int)(sin(GetNowCount() * 0.01f) * 100));
+            SetDrawBlendMode(DX_BLENDMODE_ADD, 150 + (int)(sinf(GetNowCount() * 0.01f) * 100));
             VECTOR p1 = VAdd(it.pos, VGet(-8, -20, -8));
             VECTOR p2 = VAdd(it.pos, VGet(8, 20, 8));
             DrawCube3D(p1, p2, GetColor(0, 255, 0), GetColor(255, 255, 255), TRUE);
@@ -516,11 +511,11 @@ void MainScene::Draw() {
             DrawCube3D(p3, p4, GetColor(0, 255, 0), GetColor(255, 255, 255), TRUE);
             SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
         } else if (it.type == BuffType::SHIELD) {
-            SetDrawBlendMode(DX_BLENDMODE_ADD, 150 + (int)(sin(GetNowCount() * 0.01f) * 100));
+            SetDrawBlendMode(DX_BLENDMODE_ADD, 150 + (int)(sinf(GetNowCount() * 0.01f) * 100));
             DrawSphere3D(it.pos, 15.0f, 16, GetColor(0, 150, 255), GetColor(255, 255, 255), TRUE);
             SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
         } else {
-            int color = GetColor(255, 255, 255);
+            unsigned int color = GetColor(255, 255, 255);
             if (it.type == BuffType::SHIELD) {
                 color = GetColor(0, 150, 255);
             } else if (it.type == BuffType::LASER_WEAPON) {
@@ -544,14 +539,12 @@ void MainScene::Draw() {
     uiFrame++;
     
     
-    int pulse = 180 + (int)(sin(uiFrame * 0.1f) * 75);
+    int pulse = 180 + (int)(sinf(uiFrame * 0.1f) * 75);
 
     
     int chX = 400, chY = 300;
     int chRot = uiFrame * 2;
-    int chSize = 15 + (int)(sin(uiFrame * 0.2f) * 3);
-    DrawLine(chX - chSize, chY, chX + chSize, chY, GetColor(0, 255, 255));
-    DrawLine(chX, chY - chSize, chX, chY + chSize, GetColor(0, 255, 255));
+    int chSize = 15 + (int)(sinf(uiFrame * 0.2f) * 3);
     DrawCircle(chX, chY, chSize - 5, GetColor(0, 200, 255), FALSE);
     
     
@@ -581,8 +574,8 @@ void MainScene::Draw() {
     int shakeY = (scorePopTimer > 0) ? (GetRand(4) - 2) : 0;
 
     SetDrawBlendMode(DX_BLENDMODE_ALPHA, boxAlpha);
-    DrawBox(10 + shakeX, 10 + shakeY, 200 + shakeX, 45 + shakeY, GetColor(0, 20, 50), TRUE);
-    DrawBox(10 + shakeX, 10 + shakeY, 200 + shakeX, 45 + shakeY, borderColor, FALSE);
+    DrawBox(10 + shakeX, 10 + shakeY, 240 + shakeX, 45 + shakeY, GetColor(0, 20, 50), TRUE);
+    DrawBox(10 + shakeX, 10 + shakeY, 240 + shakeX, 45 + shakeY, borderColor, FALSE);
     SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
     
     DrawFormatStringToHandle(20 + shakeX, 18 + shakeY, textColor, hudFontHandle, L"SCORE: %06d", displayScore);
@@ -650,7 +643,7 @@ void MainScene::Draw() {
     if (g_Buffs[BuffType::SPEED] > 0) buffStr += L"SPD[" + std::to_wstring(g_Buffs[BuffType::SPEED]) + L"]";
     if (buffStr.empty()) buffStr = L"NONE";
     
-    DrawStringToHandle(brX + 60, brY + 40, buffStr.c_str(), GetColor(255, 255, 255), smallFontHandle);
+    DrawStringToHandle(brX + 90, brY + 40, buffStr.c_str(), GetColor(255, 255, 255), smallFontHandle);
 
     
     int warn = boss->GetLaserStrikeWarningTimer();
@@ -707,9 +700,9 @@ void MainScene::Draw() {
         int headerFont = CreateFontToHandle(L"Impact", 50, 5, DX_FONTTYPE_ANTIALIASING_EDGE);
         
         
-        int slideY = (buffSelectTimer < 30) ? (int)(-100 + sin(buffSelectTimer * 3.14f / 60.0f) * 100) : 0;
+        int slideY = (buffSelectTimer < 30) ? (int)(-100 + sinf(buffSelectTimer * 3.14f / 60.0f) * 100) : 0;
         
-        int pulseText = 150 + (int)(sin(GetNowCount() * 0.01f) * 105);
+        int pulseText = 150 + (int)(sinf(GetNowCount() * 0.01f) * 105);
         SetDrawBlendMode(DX_BLENDMODE_ADD, pulseText);
         DrawStringToHandle(120, 80 + slideY, L"SYSTEM UPGRADE AVAILABLE", GetColor(0, 255, 255), headerFont);
         SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
@@ -718,7 +711,7 @@ void MainScene::Draw() {
 
         const wchar_t* options[3] = { L"LASER", L"BOMB", L"SPEED" };
         int images[3] = { cardLaserImg, cardBombImg, cardSpeedImg };
-        int colors[3] = { GetColor(255, 0, 255), GetColor(255, 150, 0), GetColor(0, 255, 100) };
+        unsigned int colors[3] = { GetColor(255, 0, 255), GetColor(255, 150, 0), GetColor(0, 255, 100) };
         
         
         for (int i = 0; i < 3; i++) {
@@ -728,6 +721,11 @@ void MainScene::Draw() {
             
             float scale = (buffSelectTimer < 40) ? (buffSelectTimer / 40.0f) : 1.0f;
             if (scale > 1.0f) scale = 1.0f;
+            
+            BuffType thisBuff = (i == 0) ? BuffType::LASER : (i == 1) ? BuffType::BOMB : BuffType::SPEED;
+            if (g_Buffs[thisBuff] > 0) {
+                scale *= 1.15f; 
+            }
             
             int drawBx = bx + (int)(150 * (1.0f - scale) / 2.0f);
             int drawBy = by + (int)(200 * (1.0f - scale) / 2.0f);

@@ -1,4 +1,4 @@
-#include "RankingScene.h"
+﻿#include "RankingScene.h"
 #include "GameTypes.h"
 #include "DxLib.h"
 #include <math.h>
@@ -10,7 +10,8 @@ void RankingScene::Initialize() {
     inputFontHandle = CreateFontToHandle(L"Impact", 50, 5, DX_FONTTYPE_ANTIALIASING_EDGE);
     
     isInputtingName = false;
-    keyWaitTimer = 30; // Wait before accepting input to prevent accidental skips
+    // シーン遷移直後のキーボードバッファ残りによる誤入力を防ぐためのウェイト
+    keyWaitTimer = 30; 
     
     if (g_Score > 0) {
         if (g_Ranking.size() < 5 || g_Score > g_Ranking.back().score) {
@@ -21,7 +22,7 @@ void RankingScene::Initialize() {
         }
     }
     
-    PlayMusic(L"C:\\Windows\\Media\\town.mid", DX_PLAYTYPE_LOOP);
+    PlayMusic(L"Resources\\BGM\\After_the_Ascent.mp3", DX_PLAYTYPE_LOOP);
 }
 
 SceneType RankingScene::Update() {
@@ -44,7 +45,7 @@ SceneType RankingScene::Update() {
                 isInputtingName = false;
                 DeleteKeyInput(keyInputHandle);
                 timer = 0; 
-                PlaySoundFile(L"C:\\Windows\\Media\\Windows Hardware Remove.wav", DX_PLAYTYPE_BACK);
+                PlaySoundFile(L"Resources\\SE\\Windows Hardware Remove.wav", DX_PLAYTYPE_BACK);
                 keyWaitTimer = 30; 
             }
         }
@@ -57,7 +58,7 @@ SceneType RankingScene::Update() {
     if (timer < 30 || keyWaitTimer > 0) return SceneType::RANKING;
     
     if (CheckHitKey(KEY_INPUT_RETURN) == 1 || (GetMouseInput() & MOUSE_INPUT_LEFT) != 0) {
-        PlaySoundFile(L"C:\\Windows\\Media\\Windows Hardware Remove.wav", DX_PLAYTYPE_BACK);
+        PlaySoundFile(L"Resources\\SE\\Windows Hardware Remove.wav", DX_PLAYTYPE_BACK);
         return SceneType::TITLE;
     }
     return SceneType::RANKING;
@@ -97,7 +98,7 @@ void RankingScene::Draw() {
         int milliseconds = (int)(((g_ClearTime % 60) / 60.0f) * 1000.0f);
         DrawFormatStringToHandle(280, 420, GetColor(0, 255, 255), subFontHandle, L"SCORE: %06d  TIME: %02d:%02d.%03d", g_Score, minutes, seconds, milliseconds);
         
-        int pulseText = 150 + (int)(sin(GetNowCount() * 0.01f) * 105);
+        int pulseText = 150 + (int)(sinf(GetNowCount() * 0.01f) * 105);
         SetDrawBlendMode(DX_BLENDMODE_ALPHA, pulseText);
         DrawStringToHandle(180, 500, L"TYPE YOUR NAME, PRESS ENTER TO SAVE", GetColor(150, 255, 150), subFontHandle);
         SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
@@ -105,12 +106,12 @@ void RankingScene::Draw() {
     } else {
         
         int titleAlpha = (timer * 10 > 255) ? 255 : timer * 10;
-        int slideY = (timer < 30) ? (int)(-50 + sin(timer * 3.14f / 60.0f) * 50) : 0;
+        int slideY = (timer < 30) ? (int)(-50 + sinf(timer * 3.14f / 60.0f) * 50) : 0;
         
         SetDrawBlendMode(DX_BLENDMODE_ALPHA, titleAlpha);
         DrawStringToHandle(120, 50 + slideY, L"=== TOP RANKING ===", GetColor(0, 255, 255), titleFontHandle);
         
-        int pulse = 150 + (int)(sin(timer * 0.1f) * 105);
+        int pulse = 150 + (int)(sinf(timer * 0.1f) * 105);
         SetDrawBlendMode(DX_BLENDMODE_ADD, pulse);
         DrawStringToHandle(120, 50 + slideY, L"=== TOP RANKING ===", GetColor(0, 100, 255), titleFontHandle);
         SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
@@ -169,7 +170,7 @@ void RankingScene::Draw() {
         }
         
         if (timer > 60) {
-            int alpha = 150 + (int)(sin(timer * 0.1f) * 100);
+            int alpha = 150 + (int)(sinf(timer * 0.1f) * 100);
             SetDrawBlendMode(DX_BLENDMODE_ALPHA, alpha);
             DrawStringToHandle(220, 500, L"PRESS ENTER TO RETURN", GetColor(255, 100, 100), subFontHandle);
             SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);

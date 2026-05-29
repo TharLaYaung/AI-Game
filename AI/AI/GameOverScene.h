@@ -3,10 +3,10 @@
 
 class GameOverScene : public BaseScene {
 private:
-    int timer;
-    int mainFontHandle;
-    int subFontHandle;
-    int bgImageHandle;
+    int timer{};
+    int mainFontHandle{};
+    int subFontHandle{};
+    int bgImageHandle{};
 public:
     void Initialize() override;
     SceneType Update() override;

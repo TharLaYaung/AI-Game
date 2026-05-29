@@ -4,11 +4,11 @@
 
 class OpeningScene : public BaseScene {
 private:
-    int timer;
-    int titleFontHandle;
-    int smallFontHandle;
-    int cyberFontHandle;
-    int bgImageHandle;
+    int timer{};
+    int titleFontHandle{};
+    int smallFontHandle{};
+    int cyberFontHandle{};
+    int bgImageHandle{};
 
 public:
     void Initialize() override;

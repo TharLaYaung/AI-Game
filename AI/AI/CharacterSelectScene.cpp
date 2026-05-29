@@ -1,4 +1,4 @@
-#include "CharacterSelectScene.h"
+﻿#include "CharacterSelectScene.h"
 #include "GameTypes.h"
 #include "DxLib.h"
 #include <math.h>
@@ -8,12 +8,13 @@ void CharacterSelectScene::Initialize() {
     mainFontHandle = CreateFontToHandle(L"Impact", 50, 5, DX_FONTTYPE_ANTIALIASING_EDGE_8X8);
     subFontHandle = CreateFontToHandle(L"Consolas", 32, 4, DX_FONTTYPE_ANTIALIASING_EDGE_8X8);
     difficultyFontHandle = CreateFontToHandle(L"Arial Black", 24, 3, DX_FONTTYPE_ANTIALIASING_EDGE_8X8);
-    bgImageHandle = LoadGraph(L"bg_cyberpunk.png");
+    bgImageHandle = LoadGraph(L"Resources\\img\\bg_cyberpunk.png");
     selectedBuff = BuffType::NONE;
 }
 
 SceneType CharacterSelectScene::Update() {
     timer++;
+    // シーン遷移直後の誤入力を防ぐためのハードコードディレイ
     if (timer < 30) return SceneType::CHARACTER_SELECT;
     
     static int inputCooldown = 0;
@@ -29,7 +30,7 @@ SceneType CharacterSelectScene::Update() {
                 GameDifficulty diff = (i == 0) ? GameDifficulty::EASY : (i == 1) ? GameDifficulty::NORMAL : GameDifficulty::HARD;
                 if (g_Difficulty != diff) {
                     g_Difficulty = diff;
-                    PlaySoundFile(L"C:\\Windows\\Media\\Windows Navigation Start.wav", DX_PLAYTYPE_BACK);
+                    PlaySoundFile(L"Resources\\SE\\Windows Navigation Start.wav", DX_PLAYTYPE_BACK);
                 }
             }
         }
@@ -40,21 +41,21 @@ SceneType CharacterSelectScene::Update() {
                 BuffType buff = (i == 0) ? BuffType::NONE : (i == 1) ? BuffType::LASER : (i == 2) ? BuffType::BOMB : BuffType::SPEED;
                 if (selectedBuff != buff) {
                     selectedBuff = buff;
-                    PlaySoundFile(L"C:\\Windows\\Media\\Windows Navigation Start.wav", DX_PLAYTYPE_BACK);
+                    PlaySoundFile(L"Resources\\SE\\Windows Navigation Start.wav", DX_PLAYTYPE_BACK);
                 }
             }
         }
 
         
         if (CheckHitKey(KEY_INPUT_UP) == 1 || CheckHitKey(KEY_INPUT_W) == 1) {
-            PlaySoundFile(L"C:\\Windows\\Media\\Windows Navigation Start.wav", DX_PLAYTYPE_BACK);
+            PlaySoundFile(L"Resources\\SE\\Windows Navigation Start.wav", DX_PLAYTYPE_BACK);
             if (g_Difficulty == GameDifficulty::NORMAL) g_Difficulty = GameDifficulty::EASY;
             else if (g_Difficulty == GameDifficulty::HARD) g_Difficulty = GameDifficulty::NORMAL;
             else if (g_Difficulty == GameDifficulty::EASY) g_Difficulty = GameDifficulty::HARD;
             inputCooldown = 12;
         }
         else if (CheckHitKey(KEY_INPUT_DOWN) == 1 || CheckHitKey(KEY_INPUT_S) == 1) {
-            PlaySoundFile(L"C:\\Windows\\Media\\Windows Navigation Start.wav", DX_PLAYTYPE_BACK);
+            PlaySoundFile(L"Resources\\SE\\Windows Navigation Start.wav", DX_PLAYTYPE_BACK);
             if (g_Difficulty == GameDifficulty::EASY) g_Difficulty = GameDifficulty::NORMAL;
             else if (g_Difficulty == GameDifficulty::NORMAL) g_Difficulty = GameDifficulty::HARD;
             else if (g_Difficulty == GameDifficulty::HARD) g_Difficulty = GameDifficulty::EASY;
@@ -63,7 +64,7 @@ SceneType CharacterSelectScene::Update() {
         
         
         if (CheckHitKey(KEY_INPUT_LEFT) == 1 || CheckHitKey(KEY_INPUT_A) == 1) {
-            PlaySoundFile(L"C:\\Windows\\Media\\Windows Navigation Start.wav", DX_PLAYTYPE_BACK);
+            PlaySoundFile(L"Resources\\SE\\Windows Navigation Start.wav", DX_PLAYTYPE_BACK);
             if (selectedBuff == BuffType::LASER) selectedBuff = BuffType::NONE;
             else if (selectedBuff == BuffType::BOMB) selectedBuff = BuffType::LASER;
             else if (selectedBuff == BuffType::SPEED) selectedBuff = BuffType::BOMB;
@@ -71,7 +72,7 @@ SceneType CharacterSelectScene::Update() {
             inputCooldown = 12;
         }
         else if (CheckHitKey(KEY_INPUT_RIGHT) == 1 || CheckHitKey(KEY_INPUT_D) == 1) {
-            PlaySoundFile(L"C:\\Windows\\Media\\Windows Navigation Start.wav", DX_PLAYTYPE_BACK);
+            PlaySoundFile(L"Resources\\SE\\Windows Navigation Start.wav", DX_PLAYTYPE_BACK);
             if (selectedBuff == BuffType::NONE) selectedBuff = BuffType::LASER;
             else if (selectedBuff == BuffType::LASER) selectedBuff = BuffType::BOMB;
             else if (selectedBuff == BuffType::BOMB) selectedBuff = BuffType::SPEED;
@@ -81,7 +82,7 @@ SceneType CharacterSelectScene::Update() {
     }
     
     if (CheckHitKey(KEY_INPUT_RETURN) == 1 || (GetMouseInput() & MOUSE_INPUT_LEFT) != 0) {
-        PlaySoundFile(L"C:\\Windows\\Media\\Windows Hardware Remove.wav", DX_PLAYTYPE_BACK);
+        PlaySoundFile(L"Resources\\SE\\Windows Hardware Remove.wav", DX_PLAYTYPE_BACK);
         g_Buffs.clear();
         if (selectedBuff != BuffType::NONE) {
             g_Buffs[selectedBuff] = 1;
@@ -110,7 +111,7 @@ void CharacterSelectScene::Draw() {
     SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
 
     
-    int yOffset = (int)(sin(timer * 0.05f) * 10);
+    int yOffset = (int)(sinf(timer * 0.05f) * 10);
     SetDrawBlendMode(DX_BLENDMODE_ALPHA, 128);
     DrawStringToHandle(105, 65 + yOffset, L"MISSION DEPLOYMENT", GetColor(0, 255, 0), mainFontHandle);
     SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
@@ -125,7 +126,7 @@ void CharacterSelectScene::Draw() {
     DrawStringToHandle(rightX, 180, L"GEAR (LEFT/RIGHT)", GetColor(0, 255, 255), subFontHandle);
     
     
-    int boxAlpha = 100 + (int)(sin(timer * 0.2f) * 50);
+    int boxAlpha = 100 + (int)(sinf(timer * 0.2f) * 50);
     SetDrawBlendMode(DX_BLENDMODE_ALPHA, boxAlpha);
     DrawBox(leftX + 20, 240 + (int)g_Difficulty * 50, leftX + 200, 280 + (int)g_Difficulty * 50, GetColor(0, 150, 255), TRUE);
     
@@ -134,7 +135,7 @@ void CharacterSelectScene::Draw() {
     SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
 
     
-    int diffColors[3] = { GetColor(100, 100, 100), GetColor(100, 100, 100), GetColor(100, 100, 100) };
+    unsigned int diffColors[3] = { GetColor(100, 100, 100), GetColor(100, 100, 100), GetColor(100, 100, 100) };
     diffColors[(int)g_Difficulty] = (g_Difficulty == GameDifficulty::EASY) ? GetColor(0, 255, 0) : 
                                     (g_Difficulty == GameDifficulty::NORMAL) ? GetColor(255, 255, 0) : GetColor(255, 0, 0);
     
@@ -145,7 +146,7 @@ void CharacterSelectScene::Draw() {
     DrawStringToHandle(leftX + 10, 245 + (int)g_Difficulty * 50, L">", diffColors[(int)g_Difficulty], subFontHandle);
 
     
-    int gearColors[4] = { GetColor(100, 100, 100), GetColor(100, 100, 100), GetColor(100, 100, 100), GetColor(100, 100, 100) };
+    unsigned int gearColors[4] = { GetColor(100, 100, 100), GetColor(100, 100, 100), GetColor(100, 100, 100), GetColor(100, 100, 100) };
     gearColors[buffIndex] = (selectedBuff == BuffType::NONE) ? GetColor(255, 255, 255) :
                               (selectedBuff == BuffType::LASER) ? GetColor(255, 0, 255) :
                               (selectedBuff == BuffType::BOMB) ? GetColor(255, 150, 0) : GetColor(0, 255, 100);

@@ -1,4 +1,4 @@
-#include "Boss.h"
+﻿#include "Boss.h"
 #include "GameTypes.h"
 #include <math.h>
 
@@ -9,6 +9,7 @@ void Boss::Initialize() {
     targetPos = pos;
     radius = 50.0f;
     
+    // HP上限は難易度に基づく初期値。次ステージ以降はReviveForNextStageでスケールされる
     if (g_Difficulty == GameDifficulty::EASY) hp = 300;
     else if (g_Difficulty == GameDifficulty::NORMAL) hp = 500;
     else if (g_Difficulty == GameDifficulty::HARD) hp = 1000;
@@ -23,10 +24,10 @@ void Boss::Initialize() {
 
 void Boss::Update(VECTOR playerPos) {
     if (hp <= 0) {
-        
+        // ボス撃破時は弾幕のみ残存させ、安全な位置（画面下部）へ退避させる演出制約
         pos.y -= 3.0f;
         
-        
+        // 撃破後も弾がメモリに残り続けるのを防ぐための画面外カリング処理
         for (auto& b : bullets) {
             if (b.active) {
                 b.pos = VAdd(b.pos, VScale(b.dir, b.speed));
@@ -38,10 +39,10 @@ void Boss::Update(VECTOR playerPos) {
         return;
     }
 
-    
+    // HP半減時に第2形態へ移行させ、行動パターンの攻撃頻度と移動速度を上昇させる
     if (hp <= GetMaxHP() / 2 && !isSecondForm) {
         isSecondForm = true;
-        PlaySoundFile(L"C:\\Windows\\Media\\Windows Notify System Generic.wav", DX_PLAYTYPE_BACK); 
+        PlaySoundFile(L"Resources\\SE\\Windows Notify System Generic.wav", DX_PLAYTYPE_BACK); 
     }
 
     if (laserStrikeTimer > 0) {
@@ -50,10 +51,10 @@ void Boss::Update(VECTOR playerPos) {
         laserStrikeWarningTimer--;
         if (laserStrikeWarningTimer == 0) {
             laserStrikeTimer = 60; 
-            PlaySoundFile(L"C:\\Windows\\Media\\Windows Hardware Insert.wav", DX_PLAYTYPE_BACK);
+            PlaySoundFile(L"Resources\\SE\\Windows Error.wav", DX_PLAYTYPE_BACK);
         }
     } else {
-        
+        // ステージ進行と形態変化に伴い、大技（レーザー）の発動確率を意図的に引き上げる
         int baseLaserChance = (g_Difficulty == GameDifficulty::HARD) ? 100 : (g_Difficulty == GameDifficulty::EASY) ? 300 : 200;
         
         int laserChance = baseLaserChance - (g_CurrentStage * 10);
@@ -63,7 +64,7 @@ void Boss::Update(VECTOR playerPos) {
         if (GetRand(laserChance) == 0) {
             laserStrikeWarningTimer = (g_Difficulty == GameDifficulty::HARD) ? 30 : (g_Difficulty == GameDifficulty::EASY) ? 90 : 60; 
             laserStrikePos = playerPos; 
-            PlaySoundFile(L"C:\\Windows\\Media\\Windows Default.wav", DX_PLAYTYPE_BACK);
+            PlaySoundFile(L"Resources\\SE\\Alarm01.wav", DX_PLAYTYPE_BACK);
         }
         
         if (isSecondForm || g_CurrentStage >= 3) {
@@ -72,6 +73,7 @@ void Boss::Update(VECTOR playerPos) {
             if (fbChance < 20) fbChance = 20;
             
             if (GetRand(fbChance) == 0) {
+                // 難易度ごとに爆風範囲と猶予時間を変え、視覚的な圧迫感と回避時の達成感を調整
                 int bombWarning = (g_Difficulty == GameDifficulty::HARD) ? 45 : (g_Difficulty == GameDifficulty::EASY) ? 90 : 60;
                 float bombRadius = (g_Difficulty == GameDifficulty::HARD) ? 150.0f : (g_Difficulty == GameDifficulty::EASY) ? 60.0f : 100.0f;
                 int bombDuration = (g_Difficulty == GameDifficulty::HARD) ? 300 : (g_Difficulty == GameDifficulty::EASY) ? 120 : 180;
@@ -83,14 +85,19 @@ void Boss::Update(VECTOR playerPos) {
                 fb.radius = bombRadius;
                 fb.active = true;
                 fireBombs.push_back(fb);
-                PlaySoundFile(L"C:\\Windows\\Media\\Windows Hardware Insert.wav", DX_PLAYTYPE_BACK);
+                PlaySoundFile(L"Resources\\SE\\Alarm01.wav", DX_PLAYTYPE_BACK);
             }
         }
     }
     
     for (auto& fb : fireBombs) {
         if (!fb.active) continue;
-        if (fb.warningTimer > 0) fb.warningTimer--;
+        if (fb.warningTimer > 0) {
+            fb.warningTimer--;
+            if (fb.warningTimer == 0) {
+                PlaySoundFile(L"Resources\\SE\\Windows Critical Stop.wav", DX_PLAYTYPE_BACK);
+            }
+        }
         else if (fb.activeTimer > 0) fb.activeTimer--;
         else fb.active = false;
     }
@@ -139,7 +146,7 @@ void Boss::Update(VECTOR playerPos) {
                 b.active = true;
                 b.isReflected = false;
                 bullets.push_back(b);
-                PlaySoundFile(L"C:\\Windows\\Media\\Windows Balloon.wav", DX_PLAYTYPE_BACK);
+                PlaySoundFile(L"Resources\\SE\\Windows Balloon.wav", DX_PLAYTYPE_BACK);
             }
             if (stateTimer > ((g_Difficulty == GameDifficulty::HARD) ? 15 : 30)) {
                 state = BossState::IDLE;
@@ -174,11 +181,9 @@ void Boss::Update(VECTOR playerPos) {
 }
 
 void Boss::Draw() {
-    
-        
-        
-        int hullColor = GetColor(180 - g_CurrentStage * 10, 180 - g_CurrentStage * 15, 200 - g_CurrentStage * 5);
-        if (isSecondForm) hullColor = GetColor(150, 20, 20);
+    // DxLibのZバッファ制約を回避するため、まずは不透明オブジェクト（本体）から描画
+    int hullColor = GetColor(180 - g_CurrentStage * 10, 180 - g_CurrentStage * 15, 200 - g_CurrentStage * 5);
+    if (isSecondForm) hullColor = GetColor(150, 20, 20);
         
         VECTOR top = VAdd(pos, VGet(0, radius * 0.8f, 0));
         VECTOR bottom = VAdd(pos, VGet(0, -radius * 0.5f, 0));
@@ -191,10 +196,10 @@ void Boss::Draw() {
         
         for (int i = 0; i < 4; i++) {
             float a = armorAngle + (3.14159f / 2.0f) * i;
-            VECTOR platePos = VAdd(pos, VGet(cos(a) * radius * 1.4f, 0, sin(a) * radius * 1.4f));
+            VECTOR platePos = VAdd(pos, VGet(cosf(a) * radius * 1.4f, 0, sinf(a) * radius * 1.4f));
             DrawSphere3D(platePos, radius * 0.4f, 16, plateColor, GetColor(255,255,255), TRUE);
             
-            VECTOR spikeEnd = VAdd(platePos, VGet(cos(a) * radius * 2.0f, 0, sin(a) * radius * 2.0f));
+            VECTOR spikeEnd = VAdd(platePos, VGet(cosf(a) * radius * 2.0f, 0, sinf(a) * radius * 2.0f));
             int spikeColor = GetColor(150 + g_CurrentStage * 10, 0, g_CurrentStage * 20);
             if (spikeColor > 255) spikeColor = 255;
             DrawCone3D(platePos, spikeEnd, radius * 0.2f, 8, spikeColor, GetColor(255, 255, 255), TRUE);
@@ -210,8 +215,8 @@ void Boss::Draw() {
         
         
         float energyAngle = -stateTimer * 0.1f;
-        VECTOR part1 = VAdd(pos, VGet(cos(energyAngle) * radius * 1.5f, -radius * 0.8f, sin(energyAngle) * radius * 1.5f));
-        VECTOR part2 = VAdd(pos, VGet(cos(energyAngle + 3.14f) * radius * 1.5f, -radius * 0.8f, sin(energyAngle + 3.14f) * radius * 1.5f));
+        VECTOR part1 = VAdd(pos, VGet(cosf(energyAngle) * radius * 1.5f, -radius * 0.8f, sinf(energyAngle) * radius * 1.5f));
+        VECTOR part2 = VAdd(pos, VGet(cosf(energyAngle + 3.14f) * radius * 1.5f, -radius * 0.8f, sinf(energyAngle + 3.14f) * radius * 1.5f));
         SetDrawBlendMode(DX_BLENDMODE_ADD, 150);
         DrawSphere3D(part1, radius * 0.2f, 8, GetColor(0, 255, 255), GetColor(255,255,255), TRUE);
         DrawSphere3D(part2, radius * 0.2f, 8, GetColor(0, 255, 255), GetColor(255,255,255), TRUE);

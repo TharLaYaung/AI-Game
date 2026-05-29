@@ -1,4 +1,4 @@
-#include "DxLib.h"
+﻿#include "DxLib.h"
 #include "SceneManager.h"
 #include "GameTypes.h"
 #include <fstream>
@@ -14,6 +14,7 @@ int g_SEVolume = 255;
 std::vector<RankRecord> g_Ranking;
 SceneType g_TargetScene = SceneType::TITLE;
 bool g_ExitGame = false;
+bool g_IsFirstRun = true;
 
 int g_KeyMoveUp = KEY_INPUT_W;
 int g_KeyMoveDown = KEY_INPUT_S;
@@ -86,6 +87,7 @@ void LoadRanking() {
             g_Ranking.push_back({name, score, clearTime});
         }
     } else {
+        // セーブデータが存在しない初回起動時はダミーデータで初期化し、空リストによるクラッシュを防ぐ
         g_Ranking.push_back({"CPU", 500, 99999});
         g_Ranking.push_back({"AIX", 400, 99999});
         g_Ranking.push_back({"BOT", 300, 99999});
@@ -154,7 +156,8 @@ void SaveSettings() {
 }
 
 
-int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
+// Windowsアプリケーションのエントリポイント。ゲームループの制御とDxLibの初期化/終了を担う
+int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPSTR lpCmdLine, _In_ int nCmdShow)
 {
     
     ChangeWindowMode(FALSE);
@@ -163,9 +166,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     SetGraphMode(800, 600, 32);
     
     
-    SetMainWindowText(L"繧｢繧ｯ繧ｷ繝ｧ繝ｳ繧ｲ繝ｼ繝");
+    SetMainWindowText(L"アクションゲーム");
 
-    
+    // DxLibの初期化処理。グラフィックボード非対応等の致命的エラー時は即座にアプリを終了する
     if (DxLib_Init() == -1) {
         return -1; 
     }
@@ -183,12 +186,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
     SceneManager* sceneManager = new SceneManager();
     sceneManager->Initialize();
 
-    
-    
-    
-    
-    
-    
+    // Windows OSからのメッセージ処理(ProcessMessage)と描画同期を単一スレッドのループで管理する制約
     while (ProcessMessage() == 0 && CheckHitKey(KEY_INPUT_ESCAPE) == 0 && ClearDrawScreen() == 0 && !g_ExitGame) {
         
         

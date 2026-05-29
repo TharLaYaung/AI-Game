@@ -8,6 +8,7 @@ void EffectManager::Initialize() {
 }
 
 void EffectManager::Update() {
+    // FPS低下を防ぐため、要素の削除(erase)を行わずフラグによる論理削除とする
     for (auto& p : particles) {
         if (p.active) {
             p.pos = VAdd(p.pos, p.vel);
@@ -20,6 +21,7 @@ void EffectManager::Update() {
 void EffectManager::Draw() {
     for (const auto& p : particles) {
         if (p.active) {
+            // フェードアウト演出のため、残り寿命に比例したアルファブレンド値を適用
             int alpha = (int)(255.0f * ((float)p.life / p.maxLife));
             SetDrawBlendMode(DX_BLENDMODE_ALPHA, alpha);
             DrawSphere3D(p.pos, p.size, 8, p.color, GetColor(255,255,255), TRUE);
@@ -33,13 +35,14 @@ void EffectManager::AddExplosion(VECTOR pos, int color, int count) {
         Particle p;
         p.pos = pos;
         
+        // 3D空間で偏りなく全方位に飛散させるため、球面座標系（水平角・仰角）でランダムなベクトルを生成
         float angleY = (float)GetRand(314) / 50.0f;
         float angleP = (float)(GetRand(314) - 157) / 50.0f;
         float speed = (float)(GetRand(10) + 5);
         
-        p.vel = VGet(cos(angleP) * sin(angleY) * speed,
-                     sin(angleP) * speed,
-                     cos(angleP) * cos(angleY) * speed);
+        p.vel = VGet(cosf(angleP) * sinf(angleY) * speed,
+                     sinf(angleP) * speed,
+                     cosf(angleP) * cosf(angleY) * speed);
                      
         p.life = GetRand(20) + 10;
         p.maxLife = p.life;

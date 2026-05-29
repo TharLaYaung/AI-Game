@@ -1,4 +1,4 @@
-#include "LoadingScene.h"
+﻿#include "LoadingScene.h"
 #include "GameTypes.h"
 #include "DxLib.h"
 #include <math.h>
@@ -10,17 +10,18 @@ void LoadingScene::Initialize() {
     
     type = GetRand(1);
     if (type == 0) {
-        bgImageHandle = LoadGraph(L"loading_bg.png");
+        bgImageHandle = LoadGraph(L"Resources\\img\\loading_bg.png");
     } else {
-        bgImageHandle = LoadGraph(L"loading_bg_2.png");
+        bgImageHandle = LoadGraph(L"Resources\\img\\loading_bg_2.png");
     }
     
-    PlayMusic(L"C:\\Windows\\Media\\onestop.mid", DX_PLAYTYPE_LOOP);
+    PlayMusic(L"Resources\\BGM\\Drifting_At_The_Edge.mp3", DX_PLAYTYPE_LOOP);
 }
 
 SceneType LoadingScene::Update() {
     timer++;
     
+    // 疑似ローディング演出。プレイヤーに操作説明やTipsを読む時間を与えるため、最低表示時間を保証
     if (timer > 180) {
         return g_TargetScene;
     }
@@ -38,7 +39,7 @@ void LoadingScene::Draw() {
         SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
         
         
-        int alpha = 150 + (int)(sin(timer * 0.1f) * 105);
+        int alpha = 150 + (int)(sinf(timer * 0.1f) * 105);
         SetDrawBlendMode(DX_BLENDMODE_ALPHA, alpha);
         DrawStringToHandle(280, 80, L"SYSTEM LOADING...", GetColor(0, 255, 255), fontHandle);
         SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
@@ -60,7 +61,7 @@ void LoadingScene::Draw() {
         DrawBox(100, 80, 700, 480, GetColor(255, 0, 255), FALSE);
         SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
         
-        int alpha = 150 + (int)(sin(timer * 0.15f) * 105);
+        int alpha = 150 + (int)(sinf(timer * 0.15f) * 105);
         SetDrawBlendMode(DX_BLENDMODE_ALPHA, alpha);
         DrawStringToHandle(220, 110, L"INITIALIZING...", GetColor(255, 0, 255), fontHandle);
         SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);

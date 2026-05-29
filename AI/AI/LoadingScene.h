@@ -3,11 +3,11 @@
 
 class LoadingScene : public BaseScene {
 private:
-    int timer;
-    int fontHandle;
-    int smallFontHandle;
-    int bgImageHandle;
-    int type; 
+    int timer{};
+    int fontHandle{};
+    int smallFontHandle{};
+    int bgImageHandle{};
+    int type{}; 
 public:
     void Initialize() override;
     SceneType Update() override;

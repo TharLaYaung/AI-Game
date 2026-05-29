@@ -1,4 +1,4 @@
-#include "GameOverScene.h"
+﻿#include "GameOverScene.h"
 #include "GameTypes.h"
 #include "DxLib.h"
 #include <math.h>
@@ -7,17 +7,18 @@ void GameOverScene::Initialize() {
     timer = 0;
     mainFontHandle = CreateFontToHandle(L"Arial Black", 60, 5, DX_FONTTYPE_ANTIALIASING_EDGE);
     subFontHandle = CreateFontToHandle(L"Arial Black", 24, 3, DX_FONTTYPE_ANTIALIASING_EDGE);
-    bgImageHandle = LoadGraph(L"bg_cyberpunk.png");
+    bgImageHandle = LoadGraph(L"Resources\\img\\bg_cyberpunk.png");
     
-    PlayMusic(L"C:\\Windows\\Media\\Ring06.wav", DX_PLAYTYPE_LOOP);
+    PlayMusic(L"Resources\\BGM\\Hull_Breach_Imminent.mp3", DX_PLAYTYPE_LOOP);
 }
 
 SceneType GameOverScene::Update() {
     timer++;
+    // ゲームオーバー直後の不意なキー入力による画面スキップを防止
     if (timer < 30) return SceneType::GAMEOVER; 
     
     if (CheckHitKey(KEY_INPUT_RETURN) == 1 || (GetMouseInput() & MOUSE_INPUT_LEFT) != 0) {
-        PlaySoundFile(L"C:\\Windows\\Media\\Windows Hardware Remove.wav", DX_PLAYTYPE_BACK);
+        PlaySoundFile(L"Resources\\SE\\Windows Hardware Remove.wav", DX_PLAYTYPE_BACK);
         return SceneType::RANKING;
     }
     return SceneType::GAMEOVER;

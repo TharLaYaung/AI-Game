@@ -1,18 +1,18 @@
-#pragma once
+﻿#pragma once
 #include "Scene.h"
 #include <string>
 
 class RankingScene : public BaseScene {
 private:
-    int timer;
-    int titleFontHandle;
-    int subFontHandle;
-    int inputFontHandle;
+    int timer{};
+    int titleFontHandle{};
+    int subFontHandle{};
+    int inputFontHandle{};
     
-    bool isInputtingName;
-    int keyInputHandle;
+    bool isInputtingName{};
+    int keyInputHandle{};
     
-    int keyWaitTimer;
+    int keyWaitTimer{};
 public:
     void Initialize() override;
     SceneType Update() override;

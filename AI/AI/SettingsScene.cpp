@@ -1,4 +1,4 @@
-#include "SettingsScene.h"
+﻿#include "SettingsScene.h"
 #include <cmath>
 
 void SettingsScene::Initialize() {
@@ -11,10 +11,12 @@ void SettingsScene::Initialize() {
 }
 
 SceneType SettingsScene::Update() {
+    // 諢丞峙縺励↑縺・｣邯壼・蜉帙ｒ髦ｲ縺舌◆繧√・繧ｯ繝ｼ繝ｫ繧ｿ繧､繝邂｡逅・
     if (keyWaitTimer > 0) keyWaitTimer--;
     timer++;
 
     if (isWaitingForKey) {
+        // 繧ｭ繝ｼ繧ｳ繝ｳ繝輔ぅ繧ｰ蠕・ｩ溽憾諷九ょ・繧ｭ繝ｼ蜈･蜉帙ｒ繝昴・繝ｪ繝ｳ繧ｰ縺励∵怙蛻昴↓謚ｼ縺輔ｌ縺溘く繝ｼ繧偵い繧ｵ繧､繝ｳ縺吶ｋ
         char keys[256];
         GetHitKeyStateAll(keys);
         for (int i = 0; i < 256; i++) {
@@ -22,7 +24,7 @@ SceneType SettingsScene::Update() {
                 if (i == KEY_INPUT_ESCAPE) {
                     isWaitingForKey = false;
                     keyWaitTimer = 10;
-                    PlaySoundFile(L"C:\\Windows\\Media\\Windows Hardware Remove.wav", DX_PLAYTYPE_BACK);
+                    PlaySoundFile(L"Resources\\SE\\Windows Hardware Remove.wav", DX_PLAYTYPE_BACK);
                     break;
                 }
                 
@@ -41,7 +43,7 @@ SceneType SettingsScene::Update() {
                     *targetKey = i;
                     isWaitingForKey = false;
                     keyWaitTimer = 10;
-                    PlaySoundFile(L"C:\\Windows\\Media\\Windows Ding.wav", DX_PLAYTYPE_BACK);
+                    PlaySoundFile(L"Resources\\SE\\Windows Ding.wav", DX_PLAYTYPE_BACK);
                 }
                 break;
             }
@@ -53,13 +55,13 @@ SceneType SettingsScene::Update() {
         if (CheckHitKey(KEY_INPUT_UP)) {
             cursorIndex--;
             if (cursorIndex < 0) cursorIndex = 10;
-            PlaySoundFile(L"C:\\Windows\\Media\\Windows Navigation Start.wav", DX_PLAYTYPE_BACK);
+            PlaySoundFile(L"Resources\\SE\\Windows Navigation Start.wav", DX_PLAYTYPE_BACK);
             keyWaitTimer = 10;
         }
         if (CheckHitKey(KEY_INPUT_DOWN)) {
             cursorIndex++;
             if (cursorIndex > 10) cursorIndex = 0;
-            PlaySoundFile(L"C:\\Windows\\Media\\Windows Navigation Start.wav", DX_PLAYTYPE_BACK);
+            PlaySoundFile(L"Resources\\SE\\Windows Navigation Start.wav", DX_PLAYTYPE_BACK);
             keyWaitTimer = 10;
         }
 
@@ -70,7 +72,7 @@ SceneType SettingsScene::Update() {
             if (g_SEVolume < 0) g_SEVolume = 0;
             SetVolumeMusic(g_BGMVolume);
             SetVolumeSoundFile(g_SEVolume);
-            if (cursorIndex == 1) PlaySoundFile(L"C:\\Windows\\Media\\Windows Default.wav", DX_PLAYTYPE_BACK);
+            if (cursorIndex == 1) PlaySoundFile(L"Resources\\SE\\Windows Default.wav", DX_PLAYTYPE_BACK);
             keyWaitTimer = 5;
         }
         if (CheckHitKey(KEY_INPUT_RIGHT)) {
@@ -80,25 +82,25 @@ SceneType SettingsScene::Update() {
             if (g_SEVolume > 255) g_SEVolume = 255;
             SetVolumeMusic(g_BGMVolume);
             SetVolumeSoundFile(g_SEVolume);
-            if (cursorIndex == 1) PlaySoundFile(L"C:\\Windows\\Media\\Windows Default.wav", DX_PLAYTYPE_BACK);
+            if (cursorIndex == 1) PlaySoundFile(L"Resources\\SE\\Windows Default.wav", DX_PLAYTYPE_BACK);
             keyWaitTimer = 5;
         }
 
         if (CheckHitKey(KEY_INPUT_RETURN)) {
-            if (cursorIndex >= 2 && cursorIndex <= 10) {
+            if (cursorIndex >= 2 && cursorIndex <= 10 && cursorIndex != 8 && cursorIndex != 9) {
                 isWaitingForKey = true;
-                PlaySoundFile(L"C:\\Windows\\Media\\Windows Default.wav", DX_PLAYTYPE_BACK);
+                PlaySoundFile(L"Resources\\SE\\Windows Default.wav", DX_PLAYTYPE_BACK);
                 keyWaitTimer = 10;
             } else {
                 SaveSettings();
-                PlaySoundFile(L"C:\\Windows\\Media\\Windows Hardware Remove.wav", DX_PLAYTYPE_BACK);
+                PlaySoundFile(L"Resources\\SE\\Windows Hardware Remove.wav", DX_PLAYTYPE_BACK);
                 return SceneType::TITLE;
             }
         }
         
         if (CheckHitKey(KEY_INPUT_ESCAPE)) {
             SaveSettings();
-            PlaySoundFile(L"C:\\Windows\\Media\\Windows Hardware Remove.wav", DX_PLAYTYPE_BACK);
+            PlaySoundFile(L"Resources\\SE\\Windows Hardware Remove.wav", DX_PLAYTYPE_BACK);
             return SceneType::TITLE;
         }
     }
@@ -110,8 +112,8 @@ void SettingsScene::Draw() {
     // Cool background animation
     for (int i = 0; i < 20; i++) {
         float angle = timer * 0.02f + i * 0.3f;
-        int x = 400 + (int)(cos(angle) * (200 + sin(timer*0.01f)*50));
-        int y = 300 + (int)(sin(angle) * (200 + cos(timer*0.01f)*50));
+        int x = 400 + (int)(cosf(angle) * (200 + sinf(timer*0.01f)*50));
+        int y = 300 + (int)(sinf(angle) * (200 + cosf(timer*0.01f)*50));
         SetDrawBlendMode(DX_BLENDMODE_ADD, 50);
         DrawCircle(x, y, 5 + (i % 5), GetColor(0, 255, 255), TRUE);
     }
@@ -149,7 +151,11 @@ void SettingsScene::Draw() {
 
     for (int i = 0; i < 9; i++) {
         int color = (cursorIndex == i + 2) ? GetColor(255, 255, 0) : GetColor(200, 255, 255);
-        if (isWaitingForKey && cursorIndex == i + 2) {
+        if (i == 6) {
+            DrawFormatStringToHandle(420, 155 + i * 35, color, smallFontHandle, L"%-15ls: [ Left Click ]", names[i]);
+        } else if (i == 7) {
+            DrawFormatStringToHandle(420, 155 + i * 35, color, smallFontHandle, L"%-15ls: [ Right Click ]", names[i]);
+        } else if (isWaitingForKey && cursorIndex == i + 2) {
             color = (timer % 20 < 10) ? GetColor(255, 0, 0) : GetColor(255, 255, 0);
             DrawFormatStringToHandle(420, 155 + i * 35, color, smallFontHandle, L"%-15ls: PRESS ANY KEY", names[i]);
         } else {
@@ -158,7 +164,7 @@ void SettingsScene::Draw() {
     }
     SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
 
-    int pulse = 150 + (int)(sin(GetNowCount() * 0.01f) * 105);
+    int pulse = 150 + (int)(sinf(GetNowCount() * 0.01f) * 105);
     SetDrawBlendMode(DX_BLENDMODE_ALPHA, pulse);
     DrawStringToHandle(210, 520 + offsetX, L"PRESS ENTER TO SAVE AND RETURN", GetColor(255, 255, 255), fontHandle);
     SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);

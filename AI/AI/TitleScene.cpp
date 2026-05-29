@@ -1,4 +1,4 @@
-#include "TitleScene.h"
+﻿#include "TitleScene.h"
 #include "GameTypes.h"
 #include "DxLib.h"
 #include <math.h>
@@ -9,14 +9,22 @@ void TitleScene::Initialize() {
     showSettings = false;
     inputCooldown = 0;
     
-    introState = 0;
-    introTimer = 0;
+    // 初回起動時のみ世界観説明（クロール演出）を再生し、以降は自動スキップする仕様
+    if (g_IsFirstRun) {
+        introState = 0;
+        introTimer = 0;
+        g_IsFirstRun = false;
+    } else {
+        introState = 3;
+        introTimer = 0;
+    }
     
     titleFontHandle = CreateFontToHandle(L"Impact", 64, 5, DX_FONTTYPE_ANTIALIASING_EDGE_8X8);
     subFontHandle = CreateFontToHandle(L"Arial Black", 32, 3, DX_FONTTYPE_ANTIALIASING_EDGE_8X8);
     difficultyFontHandle = CreateFontToHandle(L"Consolas", 28, 4, DX_FONTTYPE_ANTIALIASING_EDGE_8X8);
-    bgImageHandle = LoadGraph(L"bg_cyberpunk.png");
+    bgImageHandle = LoadGraph(L"Resources\\img\\bg_cyberpunk.png");
     
+    // 映画風の台形パースペクティブ描画を行うため、テキスト全文を巨大なオフスクリーンに事前描画
     crawlScreenHandle = MakeScreen(800, 2000, TRUE);
     SetDrawScreen(crawlScreenHandle);
     ClearDrawScreen();
@@ -50,7 +58,7 @@ void TitleScene::Initialize() {
     }
     SetDrawScreen(DX_SCREEN_BACK);
     
-    PlayMusic(L"C:\\Windows\\Media\\flourish.mid", DX_PLAYTYPE_LOOP);
+    PlayMusic(L"Resources\\BGM\\Drifting_At_The_Edge.mp3", DX_PLAYTYPE_LOOP);
 }
 
 SceneType TitleScene::Update() {
@@ -58,10 +66,11 @@ SceneType TitleScene::Update() {
     
     if (introState < 3) {
         introTimer++;
+        // キー・マウスの任意入力により、スキップ可能な演出としてUIUXを向上させる
         if (CheckHitKey(KEY_INPUT_RETURN) || CheckHitKey(KEY_INPUT_SPACE) || CheckHitKey(KEY_INPUT_ESCAPE) || (GetMouseInput() & MOUSE_INPUT_LEFT)) {
             introState = 3;
             inputCooldown = 30;
-            PlaySoundFile(L"C:\\Windows\\Media\\Windows Hardware Remove.wav", DX_PLAYTYPE_BACK);
+            PlaySoundFile(L"Resources\\SE\\Windows Hardware Remove.wav", DX_PLAYTYPE_BACK);
         }
         
         if (introState == 0 && introTimer > 240) { introState = 1; introTimer = 0; }
@@ -82,7 +91,7 @@ SceneType TitleScene::Update() {
             if (mouseX >= 250 && mouseX <= 600 && mouseY >= y && mouseY <= y + 50) {
                 if (menuIndex != i) {
                     menuIndex = i;
-                    PlaySoundFile(L"C:\\Windows\\Media\\Windows Navigation Start.wav", DX_PLAYTYPE_BACK);
+                    PlaySoundFile(L"Resources\\SE\\Windows Navigation Start.wav", DX_PLAYTYPE_BACK);
                 }
             }
         }
@@ -91,18 +100,18 @@ SceneType TitleScene::Update() {
             menuIndex--;
             if (menuIndex < 0) menuIndex = 3;
             inputCooldown = 15;
-            PlaySoundFile(L"C:\\Windows\\Media\\Windows Navigation Start.wav", DX_PLAYTYPE_BACK);
+            PlaySoundFile(L"Resources\\SE\\Windows Navigation Start.wav", DX_PLAYTYPE_BACK);
         }
         else if (CheckHitKey(KEY_INPUT_DOWN) == 1 || CheckHitKey(KEY_INPUT_S) == 1) {
             menuIndex++;
             if (menuIndex > 3) menuIndex = 0;
             inputCooldown = 15;
-            PlaySoundFile(L"C:\\Windows\\Media\\Windows Navigation Start.wav", DX_PLAYTYPE_BACK);
+            PlaySoundFile(L"Resources\\SE\\Windows Navigation Start.wav", DX_PLAYTYPE_BACK);
         }
     }
     
     if (inputCooldown == 0 && (CheckHitKey(KEY_INPUT_RETURN) == 1 || (GetMouseInput() & MOUSE_INPUT_LEFT) != 0)) {
-        PlaySoundFile(L"C:\\Windows\\Media\\Windows Hardware Remove.wav", DX_PLAYTYPE_BACK);
+        PlaySoundFile(L"Resources\\SE\\chimes.wav", DX_PLAYTYPE_BACK);
         inputCooldown = 15;
         if (menuIndex == 0) return SceneType::CHARACTER_SELECT;
         if (menuIndex == 1) return SceneType::RANKING;
@@ -156,12 +165,13 @@ void TitleScene::Draw() {
     if (introState == 2) {
         float scrollY = introTimer * 1.0f;
         
+        // DxLibのDrawModiGraphを用いてテクスチャの頂点座標を歪ませ、3Dスクロール演出を実現
         float h = 1500.0f; 
         DrawModiGraph(
-            300, 600 - scrollY, 
-            500, 600 - scrollY, 
-            900, 600 + h - scrollY, 
-            -100, 600 + h - scrollY, 
+            300, (int)(600 - scrollY), 
+            500, (int)(600 - scrollY), 
+            900, (int)(600 + h - scrollY), 
+            -100, (int)(600 + h - scrollY), 
             crawlScreenHandle, TRUE
         );
         return;
@@ -172,7 +182,7 @@ void TitleScene::Draw() {
     DrawBox(80, 60, 720, 560, GetColor(0, 255, 255), FALSE);
     SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
 
-    int yOffset = (int)(sin(timer * 0.05f) * 10);
+    int yOffset = (int)(sinf(timer * 0.05f) * 10);
     SetDrawBlendMode(DX_BLENDMODE_ALPHA, 128);
     DrawStringToHandle(155, 105 + yOffset, L"CYBORG BATTLE", GetColor(255, 0, 255), titleFontHandle);
     SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
@@ -182,12 +192,12 @@ void TitleScene::Draw() {
     for (int i = 0; i < 4; i++) {
         int y = 280 + i * 70;
         if (menuIndex == i) {
-            int glowAlpha = 150 + (int)(sin(timer * 0.1f) * 100);
+            int glowAlpha = 150 + (int)(sinf(timer * 0.1f) * 100);
             SetDrawBlendMode(DX_BLENDMODE_ADD, glowAlpha);
             DrawStringToHandle(290, y, options[i], GetColor(0, 255, 255), subFontHandle);
             SetDrawBlendMode(DX_BLENDMODE_NOBLEND, 0);
             
-            int cursorOffset = (int)(sin(timer * 0.2f) * 5);
+            int cursorOffset = (int)(sinf(timer * 0.2f) * 5);
             DrawStringToHandle(250 + cursorOffset, y, L">", GetColor(0, 255, 255), subFontHandle);
         } else {
             DrawStringToHandle(290, y, options[i], GetColor(100, 100, 100), subFontHandle);
